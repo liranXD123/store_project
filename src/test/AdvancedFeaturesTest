@@ -1,0 +1,67 @@
+package test;
+
+import exceptions.AuthenticationException;
+import org.junit.AfterClass;
+import org.junit.Before;
+import org.junit.Test;
+import server.ChatManager;
+import server.LoggerService;
+import server.PasswordPolicyValidator;
+
+import java.io.File;
+import static org.junit.Assert.*;
+
+public class AdvancedFeaturesTest {
+
+    @Before
+    public void setUp() {
+        // איפוס מצב לפני בדיקה
+    }
+
+    @Test
+    public void testValidPasswordPolicy() {
+        try {
+            PasswordPolicyValidator.validatePassword("Pass123");
+            assertTrue(true);
+        } catch (AuthenticationException e) {
+            fail("Password should be valid but threw: " + e.getMessage());
+        }
+    }
+
+    @Test(expected = AuthenticationException.class)
+    public void testPasswordTooShort() throws AuthenticationException {
+        PasswordPolicyValidator.validatePassword("P1a"); // פחות מ-6 תווים
+    }
+
+    @Test(expected = AuthenticationException.class)
+    public void testPasswordWithoutDigits() throws AuthenticationException {
+        PasswordPolicyValidator.validatePassword("PasswordOnly"); // ללא מספר
+    }
+
+    @Test
+    public void testChatAvailabilityAndBusyState() {
+        ChatManager chatManager = ChatManager.getInstance();
+        boolean started = chatManager.startChat("Emp_A", "Emp_B");
+        assertTrue("Chat between 2 free users should start", started);
+        assertTrue("User A should be marked busy", chatManager.isUserBusy("Emp_A"));
+
+        // ניסיון לפתוח שיחה נוספת עם משתמש תפוס
+        boolean secondChat = chatManager.startChat("Emp_A", "Emp_C");
+        assertFalse("Cannot start chat with an already busy user", secondChat);
+
+        chatManager.endChat("Emp_A");
+        assertFalse("User A should be free after chat end", chatManager.isUserBusy("Emp_A"));
+    }
+
+    @Test
+    public void testLoggerFileCreation() {
+        LoggerService.getInstance().log(LoggerService.LogType.SYSTEM, "JUnit Test Log Entry");
+        File logFile = new File("logs" + File.separator + LoggerService.LogType.SYSTEM.getFileName());
+        assertTrue("Log file should exist on disk", logFile.exists());
+    }
+
+    @AfterClass
+    public static void tearDownOnce() {
+        System.out.println("כל בדיקות ה-JUnit הסתיימו בהצלחה.");
+    }
+}

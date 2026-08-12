@@ -1,0 +1,94 @@
+package server;
+
+import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
+
+public class AdvancedChatMediator {
+    private static AdvancedChatMediator instance;
+
+    // מיפוי חדר שיחה: מזהה חדר -> רשימת משתתפים
+    private final Map<String, Set<String>> activeRooms = new ConcurrentHashMap<>();
+    // מיפוי משתמש -> מזהה חדר
+    private final Map<String, String> userToRoom = new ConcurrentHashMap<>();
+
+    private AdvancedChatMediator() {}
+
+    public static synchronized AdvancedChatMediator getInstance() {
+        if (instance == null) {
+            instance = new AdvancedChatMediator();
+        }
+        return instance;
+    }
+
+    /**
+     * פתיחת שיחה 1 על 1
+     */
+    public synchronized String createOneOnOneChat(String userA, String userB) {
+        if (userToRoom.containsKey(userA) || userToRoom.containsKey(userB)) {
+            return null; // אחד המשתמשים כבר תפוס בשיחה
+        }
+        String roomId = "ROOM_" + UUID.randomUUID().toString().substring(0, 6);
+        Set<String> participants = Collections.synchronizedSet(new HashSet<>());
+        participants.add(userA);
+        participants.add(userB);
+
+        activeRooms.put(roomId, participants);
+        userToRoom.put(userA, roomId);
+        userToRoom.put(userB, roomId);
+
+        LoggerService.getInstance().log(LoggerService.LogType.CHAT, 
+                "Room created: " + roomId + " between " + userA + " and " + userB);
+        return roomId;
+    }
+
+    /**
+     * הצטרפות מנהל משמרת לשיחה קיימת
+     */
+    public synchronized boolean joinChatAsManager(String managerId, String targetUserId) {
+        String roomId = userToRoom.get(targetUserId);
+        if (roomId == null) return false;
+
+        Set<String> participants = activeRooms.get(roomId);
+        if (participants != null) {
+            participants.add(managerId);
+            userToRoom.put(managerId, roomId);
+            LoggerService.getInstance().log(LoggerService.LogType.CHAT, 
+                    "Shift Manager " + managerId + " joined room: " + roomId);
+            return true;
+        }
+        return false;
+    }
+
+    /**
+     * ניתוק משתמש מחדר שיחה
+     */
+    public synchronized void leaveChat(String userId) {
+        String roomId = userToRoom.remove(userId);
+        if (roomId != null) {
+            Set<String> participants = activeRooms.get(roomId);
+            if (participants != null) {
+                participants.remove(userId);
+                if (participants.size() <= 1) {
+                    // אם נשאר משתתף בודד או פחות - החדר נסגר
+                    for (String remaining : participants) {
+                        userToRoom.remove(remaining);
+                    }
+                    activeRooms.remove(roomId);
+                    LoggerService.getInstance().log(LoggerService.LogType.CHAT, "Room closed: " + roomId);
+                }
+            }
+        }
+    }
+
+    public Set<String> getRoomParticipants(String userId) {
+        String roomId = userToRoom.get(userId);
+        if (roomId != null && activeRooms.containsKey(roomId)) {
+            return Collections.unmodifiableSet(activeRooms.get(roomId));
+        }
+        return Collections.emptySet();
+    }
+
+    public boolean isUserInChat(String userId) {
+        return userToRoom.containsKey(userId);
+    }
+}

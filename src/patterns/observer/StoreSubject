@@ -1,0 +1,9 @@
+package patterns.observer;
+
+public interface StoreSubject {
+    void registerObserver(StoreObserver observer);
+    void removeObserver(StoreObserver observer);
+    void notifyInventoryChanged(String branchId);
+    void notifyCustomerListChanged();
+    void notifyUserStatusChanged(String employeeId, boolean isOnline);
+}

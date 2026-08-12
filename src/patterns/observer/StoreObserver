@@ -1,0 +1,7 @@
+package patterns.observer;
+
+public interface StoreObserver {
+    void onInventoryChanged(String branchId);
+    void onCustomerListChanged();
+    void onUserStatusChanged(String employeeId, boolean isOnline);
+}
