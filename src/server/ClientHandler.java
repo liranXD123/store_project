@@ -36,7 +36,7 @@ public class ClientHandler implements Runnable {
             in = new BufferedReader(new InputStreamReader(socket.getInputStream()));
             out = new PrintWriter(socket.getOutputStream(), true);
 
-            out.println("WELCOME תוכנת ניהול רשת חנויות בגדים");
+            out.println("WELCOME to the Clothing Store Management System");
             String line;
             while ((line = in.readLine()) != null) {
                 if (line.equalsIgnoreCase("EXIT") || line.equalsIgnoreCase("QUIT")) {
@@ -104,7 +104,7 @@ public class ClientHandler implements Runnable {
 
     private void handleGetInventory() {
         if (currentUser == null) { 
-            out.println("ERROR::משתמש לא מחובר"); 
+            out.println("ERROR::User not logged in"); 
             return; 
         }
         Branch branch = StoreDataManager.getInstance().getBranches().get(currentUser.getBranchId());
@@ -124,7 +124,7 @@ public class ClientHandler implements Runnable {
 
     private void handleBuy(String custId, String prodId, int qty) {
         if (currentUser == null) { 
-            out.println("ERROR::משתמש לא מחובר"); 
+            out.println("ERROR::User not logged in"); 
             return; 
         }
         try {
@@ -172,7 +172,7 @@ public class ClientHandler implements Runnable {
         ReportGenerator.exportToWordDoc(fileName, "דוח מכירות - רשת חנויות בגדים", records);
         out.println("REPORT_WORD_SUCCESS::" + fileName);
     } catch (IOException e) {
-        out.println("ERROR::שגיאה ביצירת מסמך: " + e.getMessage());
+        out.println("ERROR:: Failed to create document: " + e.getMessage());
     }
 }
     private void handleChatRequest(String targetBranchId) {
@@ -184,7 +184,7 @@ public class ClientHandler implements Runnable {
             freeAgent.out.println("CHAT_STARTED::" + currentUser.getFullName());
         } else {
             ChatManager.getInstance().registerMissedRequest(currentUser.getEmployeeId(), targetBranchId);
-            out.println("CHAT_QUEUED::אין נציג פנוי בסניף המבוקש. פנייתך נרשמה בתור.");
+            out.println("CHAT_QUEUED::There is no available agent in the requested branch. Your request has been queued.");
         }
     }
 

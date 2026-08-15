@@ -41,23 +41,23 @@ public class StoreDataManager {
 
     private void initDefaultData() {
         // סניפים
-        Branch b1 = new Branch("B1", "תל אביב");
-        Branch b2 = new Branch("B2", "חיפה");
+        Branch b1 = new Branch("B1", "Tel Aviv");
+        Branch b2 = new Branch("B2", "Haifa");
         branches.put("B1", b1);
         branches.put("B2", b2);
 
         // משתמשי מערכת
-        User admin = new User("E101", "אבי כהן", "012345678", "050-1111111", "12-345-678", "B1", Role.ADMIN, "admin123");
-        User shiftMgr = new User("E102", "דנה לוי", "023456789", "052-2222222", "12-345-679", "B1", Role.SHIFT_MANAGER, "mgr123");
-        User cashier = new User("E103", "יוסי שרון", "034567890", "054-3333333", "12-345-680", "B2", Role.CASHIER, "cash123");
+        User admin = new User("E101", "Avi Cohen", "012345678", "050-1111111", "12-345-678", "B1", Role.ADMIN, "admin123");
+        User shiftMgr = new User("E102", "Dana Levi", "023456789", "052-2222222", "12-345-679", "B1", Role.SHIFT_MANAGER, "mgr123");
+        User cashier = new User("E103", "Yossi Sharon", "034567890", "054-3333333", "12-345-680", "B2", Role.CASHIER, "cash123");
         users.put(admin.getEmployeeId(), admin);
         users.put(shiftMgr.getEmployeeId(), shiftMgr);
         users.put(cashier.getEmployeeId(), cashier);
 
         // מוצרים ומלאי
-        Product p1 = new Product("P01", "חולצת פולו", "חולצות", 120.0);
-        Product p2 = new Product("P02", "מכנסי ג'ינס", "מכנסיים", 250.0);
-        Product p3 = new Product("P03", "ז'קט עור", "עליוניות", 450.0);
+        Product p1 = new Product("P01", " Polo Shirt", "Shirts", 120.0);
+        Product p2 = new Product("P02", "Jeans", "Pants", 250.0);
+        Product p3 = new Product("P03", "Leather Jacket", "Jackets", 450.0);
         products.put(p1.getId(), p1);
         products.put(p2.getId(), p2);
         products.put(p3.getId(), p3);
@@ -68,9 +68,9 @@ public class StoreDataManager {
         b2.addStock(p3, 8);
 
         // לקוחות ראשוניים
-        Customer c1 = new NewCustomer("C01", "רוני קליין", "050-9999991");
-        Customer c2 = new ReturningCustomer("C02", "מיכל זיו", "050-9999992");
-        Customer c3 = new VipCustomer("C03", "אלון דורון", "050-9999993");
+        Customer c1 = new NewCustomer("C01", "Ronnie Kline", "050-9999991");
+        Customer c2 = new ReturningCustomer("C02", "Michal Ziv", "050-9999992");
+        Customer c3 = new VipCustomer("C03", "Alon Doron", "050-9999993");
         customers.put(c1.getId(), c1);
         customers.put(c2.getId(), c2);
         customers.put(c3.getId(), c3);
@@ -79,7 +79,7 @@ public class StoreDataManager {
     public User authenticate(String employeeId, String password) throws AuthenticationException {
         User u = users.get(employeeId);
         if (u == null || !u.validatePassword(password)) {
-            throw new AuthenticationException("שם משתמש או סיסמה שגויים!");
+            throw new AuthenticationException("Invalid user ID or password.");
         }
         return u;
     }
