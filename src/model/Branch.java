@@ -7,8 +7,9 @@ import java.util.HashMap;
 import java.util.Map;
 
 public class Branch implements Serializable {
-    private static final long serialVersionUID = 1L;
+    private static final long serialVersionUID = 1L; // מזהה ייחודי לגרסה של המחלקה, משמש בעת סריאליזציה כדי לוודא שהגרסה של המחלקה תואמת לגרסה של האובייקט המוסר
 
+    // שדות הסניף
     private String branchId;
     private String branchName;
     // Map מסונכרן בין מוצר לכמות במלאי
@@ -16,6 +17,7 @@ public class Branch implements Serializable {
     private final Object inventoryLock = new Object();
 
     public Branch(String branchId, String branchName) {
+        // בנאי למחלקת Branch שמקבל את כל השדות הנדרשים ליצירת אובייקט סניף חדש
         this.branchId = branchId;
         this.branchName = branchName;
     }
@@ -24,6 +26,7 @@ public class Branch implements Serializable {
     public String getBranchName() { return branchName; }
 
     public void addStock(Product product, int quantity) {
+        // הוספת מלאי למוצר מסוים בסניף, תוך סינכרון על מנת למנוע התנגשויות בין threads
         synchronized (inventoryLock) {
             int current = inventory.getOrDefault(product, 0);
             inventory.put(product, current + quantity);
@@ -31,6 +34,7 @@ public class Branch implements Serializable {
     }
 
     public void reduceStock(Product product, int quantity) throws OutOfStockException {
+        // הפחתת מלאי למוצר מסוים בסניף, תוך סינכרון על מנת למנוע התנגשויות בין threads
         synchronized (inventoryLock) {
             int current = inventory.getOrDefault(product, 0);
             if (current < quantity) {
@@ -41,6 +45,7 @@ public class Branch implements Serializable {
     }
 
     public Map<Product, Integer> getInventorySnapshot() {
+        // החזרת עותק בלתי ניתן לשינוי של המלאי הנוכחי בסניף, תוך סינכרון על מנת למנוע התנגשויות בין threads
         synchronized (inventoryLock) {
             return Collections.unmodifiableMap(new HashMap<>(inventory));
         }

@@ -18,6 +18,7 @@ public class AdvancedFeaturesTest {
         // איפוס מצב לפני בדיקה
     }
 
+    // בדיקה של מדיניות סיסמאות
     @Test
     public void testValidPasswordPolicy() {
         try {
@@ -28,18 +29,22 @@ public class AdvancedFeaturesTest {
         }
     }
 
+    // בדיקה של סיסמאות לא חוקיות
     @Test(expected = AuthenticationException.class)
     public void testPasswordTooShort() throws AuthenticationException {
         PasswordPolicyValidator.validatePassword("P1a"); // פחות מ-6 תווים
     }
 
+    //בדיקה של סיסמאות ללא ספרות
     @Test(expected = AuthenticationException.class)
     public void testPasswordWithoutDigits() throws AuthenticationException {
         PasswordPolicyValidator.validatePassword("PasswordOnly"); // ללא מספר
     }
 
+    
     @Test
     public void testChatAvailabilityAndBusyState() {
+        // בדיקה של התחלת שיחה בין שני משתמשים חופשיים
         ChatManager chatManager = ChatManager.getInstance();
         boolean started = chatManager.startChat("Emp_A", "Emp_B");
         assertTrue("Chat between 2 free users should start", started);
@@ -49,12 +54,14 @@ public class AdvancedFeaturesTest {
         boolean secondChat = chatManager.startChat("Emp_A", "Emp_C");
         assertFalse("Cannot start chat with an already busy user", secondChat);
 
+        // סיום השיחה ובדיקת מצב חופשי
         chatManager.endChat("Emp_A");
         assertFalse("User A should be free after chat end", chatManager.isUserBusy("Emp_A"));
     }
 
     @Test
     public void testLoggerFileCreation() {
+        // בדיקה של יצירת קובץ לוג  
         LoggerService.getInstance().log(LoggerService.LogType.SYSTEM, "JUnit Test Log Entry");
         File logFile = new File("logs" + File.separator + LoggerService.LogType.SYSTEM.getFileName());
         assertTrue("Log file should exist on disk", logFile.exists());
@@ -62,6 +69,8 @@ public class AdvancedFeaturesTest {
 
     @AfterClass
     public static void tearDownOnce() {
+        // לאחר כל הבדיקות, נוודא שהלוגים נכתבו כראוי
+        LoggerService.getInstance().log(LoggerService.LogType.SYSTEM, "All JUnit tests completed successfully.");
         System.out.println("כל בדיקות ה-JUnit הסתיימו בהצלחה.");
     }
 }

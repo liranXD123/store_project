@@ -1,13 +1,14 @@
 package server;
 
 import exceptions.DuplicateLoginException;
-import java.util.Collections;
-import java.util.HashSet;
-import java.util.Set;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 public class SessionManager {
     private static SessionManager instance;
-    private final Set<String> loggedInUserIds = Collections.synchronizedSet(new HashSet<>());
+    
+    // שינינו ל-Map: עכשיו שומרים גם את מזהה העובד וגם את אובייקט התקשורת שלו
+    private final Map<String, ClientHandler> activeSessions = new ConcurrentHashMap<>();
 
     private SessionManager() {}
 
@@ -17,19 +18,35 @@ public class SessionManager {
         }
         return instance;
     }
-
-    public synchronized void login(String userId) throws DuplicateLoginException {
-        if (loggedInUserIds.contains(userId)) {
+    
+    // עדכנו את הפונקציה כך שתקבל גם את ה-handler של מי שמתחבר
+    public synchronized void login(String userId, ClientHandler handler) throws DuplicateLoginException {
+        if (activeSessions.containsKey(userId)) {
             throw new DuplicateLoginException("User " + userId + " is already logged in from another device!");
         }
-        loggedInUserIds.add(userId);
+        activeSessions.put(userId, handler);
     }
 
     public synchronized void logout(String userId) {
-        loggedInUserIds.remove(userId);
+        // הסרת המשתמש מהרשימה של המשתמשים המחוברים
+        activeSessions.remove(userId);
     }
 
     public synchronized boolean isUserLoggedIn(String userId) {
-        return loggedInUserIds.contains(userId);
+        // בדיקה אם המשתמש מחובר כרגע
+        return activeSessions.containsKey(userId);
+    }
+
+    // פונקציה חדשה שמחזירה את ה-handler של המשתמש המחובר לפי מזהה העובד
+    public synchronized ClientHandler getClientHandler(String userId) {
+        return activeSessions.get(userId);
+    }
+    // פונקציה חדשה שמחזירה את כל המשתמשים המחוברים
+    public synchronized Map<String, ClientHandler> getActiveSessions() {
+        return activeSessions;
+    }
+    // פונקציה חדשה שמחזירה את ה-handler של המשתמש לפי מזהה העובד   
+    public synchronized ClientHandler getHandler(String userId) {
+        return activeSessions.get(userId);
     }
 }

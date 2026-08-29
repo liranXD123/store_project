@@ -33,6 +33,7 @@ public class StoreDataManager {
     }
 
     public static synchronized StoreDataManager getInstance() {
+        // יצירת מופע יחיד של StoreDataManager (Singleton Pattern)
         if (instance == null) {
             instance = new StoreDataManager();
         }
@@ -47,9 +48,12 @@ public class StoreDataManager {
         branches.put("B2", b2);
 
         // משתמשי מערכת
-        User admin = new User("E101", "Avi Cohen", "012345678", "050-1111111", "12-345-678", "B1", Role.ADMIN, "admin123");
-        User shiftMgr = new User("E102", "Dana Levi", "023456789", "052-2222222", "12-345-679", "B1", Role.SHIFT_MANAGER, "mgr123");
-        User cashier = new User("E103", "Yossi Sharon", "034567890", "054-3333333", "12-345-680", "B2", Role.CASHIER, "cash123");
+        User admin = new User("E101", "Avi Cohen", "012345678", "050-1111111", "12-345-678", "B1", Role.ADMIN,
+                "admin123");
+        User shiftMgr = new User("E102", "Dana Levi", "023456789", "052-2222222", "12-345-679", "B1",
+                Role.SHIFT_MANAGER, "mgr123");
+        User cashier = new User("E103", "Yossi Sharon", "034567890", "054-3333333", "12-345-680", "B2", Role.CASHIER,
+                "cash123");
         users.put(admin.getEmployeeId(), admin);
         users.put(shiftMgr.getEmployeeId(), shiftMgr);
         users.put(cashier.getEmployeeId(), cashier);
@@ -77,6 +81,7 @@ public class StoreDataManager {
     }
 
     public User authenticate(String employeeId, String password) throws AuthenticationException {
+        // אימות משתמש לפי מזהה וסיסמה
         User u = users.get(employeeId);
         if (u == null || !u.validatePassword(password)) {
             throw new AuthenticationException("Invalid user ID or password.");
@@ -84,23 +89,45 @@ public class StoreDataManager {
         return u;
     }
 
+    public synchronized boolean addUser(User user) {
+        // הוספת משתמש חדש למערכת, אם הוא כבר קיים לפי מזהה העובד, מחזירים false
+        if (users.containsKey(user.getEmployeeId())) {
+            return false;
+        }
+        users.put(user.getEmployeeId(), user);
+        return true;
+    }
+
+    public synchronized boolean addCustomer(Customer customer) {
+        // הוספת לקוח חדש למערכת, אם הוא כבר קיים לפי מזהה הלקוח, מחזירים false
+        if (customers.containsKey(customer.getId())) {
+            return false;
+        }
+        customers.put(customer.getId(), customer);
+        return true;
+    }
+
     public synchronized void registerCustomer(Customer customer) {
+        // רישום לקוח חדש במערכת והוספתו למאגר הלקוחות
         customers.put(customer.getId(), customer);
         LoggerService.getInstance().log(LoggerService.LogType.CUSTOMERS, "Registered customer: " + customer);
     }
 
     public synchronized void registerEmployee(User user) {
+        // רישום עובד חדש במערכת והוספתו למאגר המשתמשים
         users.put(user.getEmployeeId(), user);
         LoggerService.getInstance().log(LoggerService.LogType.EMPLOYEES, "Registered employee: " + user);
     }
 
-    public synchronized SaleRecord processPurchase(String branchId, String empId, String custId, 
-                                                   String prodId, int qty) throws OutOfStockException {
+    public synchronized SaleRecord processPurchase(String branchId, String empId, String custId,
+            String prodId, int qty) throws OutOfStockException {
+                // עיבוד רכישה: הפחתת מלאי, חישוב מחיר סופי לפי סוג הלקוח, יצירת רשומת מכירה
         Branch branch = branches.get(branchId);
         Product prod = products.get(prodId);
         Customer cust = customers.get(custId);
 
         if (branch == null || prod == null || cust == null) {
+            // בדיקה אם הסניף, המוצר או הלקוח אינם קיימים במערכת
             throw new IllegalArgumentException("Invalid branch, product, or customer ID");
         }
 
@@ -111,20 +138,36 @@ public class StoreDataManager {
         double baseTotal = prod.getBasePrice() * qty;
         double finalPrice = cust.calculateFinalPrice(baseTotal);
 
-        SaleRecord record = new SaleRecord(UUID.randomUUID().toString().substring(0, 8), 
+        SaleRecord record = new SaleRecord(UUID.randomUUID().toString().substring(0, 8),
                 branchId, empId, custId, prodId, prod.getName(), prod.getCategory(), qty, finalPrice);
-        
+
         salesHistory.add(record);
         LoggerService.getInstance().log(LoggerService.LogType.TRANSACTIONS, record.toLogString());
         return record;
     }
 
     public List<SaleRecord> getSalesHistory() {
+        // החזרת רשימת כל רשומות המכירה שנעשו במערכת
         return Collections.unmodifiableList(salesHistory);
     }
 
-    public Map<String, Customer> getCustomers() { return customers; }
-    public Map<String, Branch> getBranches() { return branches; }
-    public Map<String, Product> getProducts() { return products; }
-    public Map<String, User> getUsers() { return users; }
+    public Map<String, Customer> getCustomers() {
+        // החזרת מפת כל הלקוחות במערכת
+        return customers;
+    }
+
+    public Map<String, Branch> getBranches() {
+        // החזרת מפת כל הסניפים במערכת
+        return branches;
+    }
+
+    public Map<String, Product> getProducts() {
+        // החזרת מפת כל המוצרים במערכת
+        return products;
+    }
+
+    public Map<String, User> getUsers() {
+        // החזרת מפת כל המשתמשים במערכת
+        return users;
+    }
 }

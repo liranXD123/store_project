@@ -20,6 +20,7 @@ public class ReportGenerator {
         json.append("  \"sales\": [\n");
 
         for (int i = 0; i < sales.size(); i++) {
+            // יצירת רשומת מכירה בפורמט JSON
             SaleRecord s = sales.get(i);
             json.append("    {\n");
             json.append("      \"transactionId\": \"").append(s.getTransactionId()).append("\",\n");

@@ -13,6 +13,7 @@ public class LoggerService {
     private static final DateTimeFormatter DTF = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
 
     private LoggerService() {
+        // יצירת תיקיית הלוגים אם היא לא קיימת
         File dir = new File(LOG_DIR);
         if (!dir.exists()) {
             dir.mkdirs();
@@ -20,6 +21,7 @@ public class LoggerService {
     }
 
     public static synchronized LoggerService getInstance() {
+        // יצירת מופע יחיד של LoggerService (Singleton Pattern)
         if (instance == null) {
             instance = new LoggerService();
         }
@@ -27,6 +29,7 @@ public class LoggerService {
     }
 
     public enum LogType {
+        // סוגי הלוגים השונים במערכת
         EMPLOYEES("employees.log"),
         CUSTOMERS("customers.log"),
         TRANSACTIONS("sales_transactions.log"),
@@ -39,6 +42,7 @@ public class LoggerService {
     }
 
     public synchronized void log(LogType type, String message) {
+        // כתיבת הודעת לוג לקובץ המתאים לפי סוג הלוג
         File file = new File(LOG_DIR + File.separator + type.getFileName());
         try (PrintWriter pw = new PrintWriter(new FileWriter(file, true))) {
             String timestamp = LocalDateTime.now().format(DTF);

@@ -5,8 +5,9 @@ import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 
 public class SaleRecord implements Serializable {
-    private static final long serialVersionUID = 1L;
+    private static final long serialVersionUID = 1L; // מזהה ייחודי לגרסה של המחלקה, משמש בעת סריאליזציה כדי לוודא שהגרסה של המחלקה תואמת לגרסה של האובייקט המוסר
 
+    // שדות הרישום של המכירה
     private String transactionId;
     private String branchId;
     private String employeeId;
@@ -18,6 +19,7 @@ public class SaleRecord implements Serializable {
     private double finalPrice;
     private LocalDateTime timestamp;
 
+    // בנאי למחלקת SaleRecord שמקבל את כל השדות הנדרשים ליצירת אובייקט רישום מכירה חדש
     public SaleRecord(String transactionId, String branchId, String employeeId, 
                       String customerId, String productId, String productName, 
                       String category, int quantity, double finalPrice) {
@@ -33,6 +35,7 @@ public class SaleRecord implements Serializable {
         this.timestamp = LocalDateTime.now();
     }
 
+    // גטרים לשדות הרישום של המכירה
     public String getTransactionId() { return transactionId; }
     public String getBranchId() { return branchId; }
     public String getEmployeeId() { return employeeId; }
@@ -44,6 +47,7 @@ public class SaleRecord implements Serializable {
     public double getFinalPrice() { return finalPrice; }
     public LocalDateTime getTimestamp() { return timestamp; }
 
+    // החזרת מחרוזת שמייצגת את אובייקט SaleRecord, כולל כל השדות המרכזיים
     public String toLogString() {
         DateTimeFormatter dtf = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
         return String.format("[%s] Trans: %s | Branch: %s | Emp: %s | Cust: %s | Item: %s (x%d) | Total: ₪%.2f",
