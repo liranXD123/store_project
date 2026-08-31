@@ -4,14 +4,15 @@ import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
 
+// Class responsible for managing chat sessions, including tracking busy users, missed chat requests, and active chats between users.
 public class ChatManager {
     private static ChatManager instance;
 
-    // עובדים במצב פעיל (עסוקים בשיחה)
+    // Set to keep track of users who are currently busy in a chat
     private final Set<String> busyUsers = Collections.synchronizedSet(new HashSet<>());
-    // תור משתמשים שלא קיבלו מענה וממתינים לשיחה חוזרת
+    // Queue to keep track of missed chat requests (requests that were not answered)
     private final Queue<ChatRequest> missedCallQueue = new ConcurrentLinkedQueue<>();
-    // מיפוי של שיחות פעילות (Client1 -> Client2)
+    // Map to keep track of active chats between users
     private final Map<String, String> activeChats = new ConcurrentHashMap<>();
 
     public static class ChatRequest {
@@ -20,7 +21,7 @@ public class ChatManager {
         public final long timestamp;
 
         public ChatRequest(String requesterId, String targetBranchId) {
-            // שמירת מזהה המשתמש שביקש את השיחה, מזהה הסניף שאליו הוא פונה, והזמן שבו הבקשה נוצרה
+            // Saving the ID of the user who requested the chat, the ID of the branch they are contacting, and the time the request was created
             this.requesterId = requesterId;
             this.targetBranchId = targetBranchId;
             this.timestamp = System.currentTimeMillis();
@@ -30,7 +31,7 @@ public class ChatManager {
     private ChatManager() {}
 
     public static synchronized ChatManager getInstance() {
-        // יצירת מופע יחיד של ChatManager (Singleton Pattern)
+        // Ensuring that only one instance of the ChatManager class is created (Singleton pattern)
         if (instance == null) {
             instance = new ChatManager();
         }
@@ -38,7 +39,7 @@ public class ChatManager {
     }
 
     public synchronized boolean startChat(String userA, String userB) {
-        // התחלת שיחה בין שני משתמשים, אם הם אינם עסוקים כבר בשיחה אחרת
+        // Starting a chat between two users, checking if either user is already busy, and if not, marking them as busy and adding them to the active chats map
         if (busyUsers.contains(userA) || busyUsers.contains(userB)) {
             return false;
         }
@@ -50,7 +51,7 @@ public class ChatManager {
     }
 
     public synchronized void endChat(String userA) {
-        // סיום שיחה עבור משתמש מסוים, הסרתו מהרשימה של המשתמשים העסוקים ומניעת המשך השיחה עם המשתמש השני
+        // Ending a chat for a specific user, removing them from the list of busy users and preventing further communication with the other user
         String userB = activeChats.remove(userA);
         if (userB != null) {
             activeChats.remove(userB);
@@ -60,12 +61,12 @@ public class ChatManager {
     }
 
     public void registerMissedRequest(String requesterId, String targetBranchId) {
-        // רישום בקשה לשיחה שלא נענתה, הוספתה לתור המתנה
+        // Registering a missed chat request, adding it to the queue of pending requests
         missedCallQueue.add(new ChatRequest(requesterId, targetBranchId));
     }
 
     public List<ChatRequest> getAndClearPendingRequestsForBranch(String branchId) {
-        // קבלת כל הבקשות לשיחות שלא נענו עבור סניף מסוים, והסרתן מהתור
+        // Retrieving all pending chat requests for a specific branch and removing them from the queue
         List<ChatRequest> pending = new ArrayList<>();
         Iterator<ChatRequest> it = missedCallQueue.iterator();
         while (it.hasNext()) {
@@ -79,7 +80,7 @@ public class ChatManager {
     }
 
     public boolean isUserBusy(String userId) {
-        // בדיקה אם המשתמש נמצא במצב עסוק (במהלך שיחה)
+        // Checking if the user is in a busy state (in the middle of a chat)
         return busyUsers.contains(userId);
     }
 }

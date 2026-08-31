@@ -6,18 +6,19 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 
+// Class representing a branch in the store system, implementing Serializable to allow branch objects to be serialized for storage or transmission.
 public class Branch implements Serializable {
-    private static final long serialVersionUID = 1L; // מזהה ייחודי לגרסה של המחלקה, משמש בעת סריאליזציה כדי לוודא שהגרסה של המחלקה תואמת לגרסה של האובייקט המוסר
+    private static final long serialVersionUID = 1L; // Unique identifier for serialization, ensuring that a deserialized object matches the version of the class used to serialize it.
 
-    // שדות הסניף
+    // Branch fields
     private String branchId;
     private String branchName;
-    // Map מסונכרן בין מוצר לכמות במלאי
+    // Map storing the inventory of products in the branch
     private final Map<Product, Integer> inventory = new HashMap<>();
     private final Object inventoryLock = new Object();
 
     public Branch(String branchId, String branchName) {
-        // בנאי למחלקת Branch שמקבל את כל השדות הנדרשים ליצירת אובייקט סניף חדש
+        // Constructor for the Branch class that accepts all required fields for creating a new branch object
         this.branchId = branchId;
         this.branchName = branchName;
     }
@@ -26,7 +27,7 @@ public class Branch implements Serializable {
     public String getBranchName() { return branchName; }
 
     public void addStock(Product product, int quantity) {
-        // הוספת מלאי למוצר מסוים בסניף, תוך סינכרון על מנת למנוע התנגשויות בין threads
+        // Adding stock for a specific product in the branch, with synchronization to prevent race conditions between threads
         synchronized (inventoryLock) {
             int current = inventory.getOrDefault(product, 0);
             inventory.put(product, current + quantity);
@@ -34,7 +35,7 @@ public class Branch implements Serializable {
     }
 
     public void reduceStock(Product product, int quantity) throws OutOfStockException {
-        // הפחתת מלאי למוצר מסוים בסניף, תוך סינכרון על מנת למנוע התנגשויות בין threads
+        // Reducing stock for a specific product in the branch, with synchronization to prevent race conditions between threads
         synchronized (inventoryLock) {
             int current = inventory.getOrDefault(product, 0);
             if (current < quantity) {
@@ -45,7 +46,7 @@ public class Branch implements Serializable {
     }
 
     public Map<Product, Integer> getInventorySnapshot() {
-        // החזרת עותק בלתי ניתן לשינוי של המלאי הנוכחי בסניף, תוך סינכרון על מנת למנוע התנגשויות בין threads
+        // Returning an unmodifiable copy of the current inventory in the branch, with synchronization to prevent race conditions between threads
         synchronized (inventoryLock) {
             return Collections.unmodifiableMap(new HashMap<>(inventory));
         }

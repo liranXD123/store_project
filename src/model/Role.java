@@ -1,7 +1,8 @@
 package model;
 
+// Enum representing different roles in the store system, each with a specific title and associated permissions.
 public enum Role {
-    // תפקידים שונים במערכת, כל תפקיד מייצג רמת הרשאות שונה
+    // Different roles in the system, each representing a different level of permissions
     ADMIN("Admin"),
     SHIFT_MANAGER("Shift Manager"),
     CASHIER("Cashier"),
@@ -10,12 +11,12 @@ public enum Role {
     private final String title;
 
     Role(String title) {
-        // שמירת הכותרת של התפקיד
+        // Saving the title of the role
         this.title = title;
     }
 
     public String getTitle() {
-        // החזרת הכותרת של התפקיד
+        // Returning the title of the role
         return title;
     }
 }

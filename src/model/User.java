@@ -3,10 +3,11 @@ package model;
 import java.io.Serializable;
 import java.util.Objects;
 
+// Class representing a user in the store system, implementing Serializable to allow user objects to be serialized for storage or transmission.
 public class User implements Serializable {
-    private static final long serialVersionUID = 1L; // מזהה ייחודי לגרסה של המחלקה, משמש בעת סריאליזציה כדי לוודא שהגרסה של המחלקה תואמת לגרסה של האובייקט המוסר
+    private static final long serialVersionUID = 1L; // Unique identifier for the class version, used during serialization to ensure the class version matches the serialized object
 
-    // שדות המשתמש
+    // User fields
     private String employeeId;
     private String fullName;
     private String idNumber;
@@ -16,7 +17,7 @@ public class User implements Serializable {
     private Role role;
     private String password;
 
-    // בנאי למחלקת User שמקבל את כל השדות הנדרשים ליצירת אובייקט משתמש חדש
+    // Constructor for the User class that accepts all required fields for creating a new user object
     public User(String employeeId, String fullName, String idNumber, String phone, 
                 String bankAccountNumber, String branchId, Role role, String password) {
         this.employeeId = employeeId;
@@ -29,7 +30,7 @@ public class User implements Serializable {
         this.password = password;
     }
 
-    // גטרים וסטרים לשדות המשתמש
+    // Getters and setters for the user fields
     public void setEmployeeId(String employeeId) { this.employeeId = employeeId; }
     public String getEmployeeId() { return employeeId; }
     public String getFullName() { return fullName; }
@@ -50,7 +51,7 @@ public class User implements Serializable {
 
     @Override
     public boolean equals(Object o) {
-        // בדיקה אם האובייקט הנוכחי הוא אותו אובייקט כמו האובייקט המועבר, ואם לא, בדיקה אם הוא מאותו סוג והשוואת מזהה העובד
+        // Checking if the current object is the same object as the one passed, and if not, checking if it's of the same type and comparing the employee ID
         if (this == o) return true;
         if (!(o instanceof User)) return false;
         User user = (User) o;
@@ -59,13 +60,13 @@ public class User implements Serializable {
 
     @Override
     public int hashCode() {
-        // החזרת קוד hash מבוסס על מזהה העובד, משמש לאחסון האובייקט במבני נתונים כמו HashMap או HashSet
+        // Returning the hash code based on the employee ID, used for storing the object in data structures like HashMap or HashSet
         return Objects.hash(employeeId);
     }
 
     @Override
     public String toString() {
-        // החזרת מחרוזת שמייצגת את האובייקט, כולל מזהה העובד, שם מלא, תפקיד, סניף ומספר טלפון
+        // Returning a string representation of the object, including the employee ID, full name, role, branch, and phone number
         return String.format("Employee #%s: %s | Role: %s | Branch: %s | Phone: %s",
                 employeeId, fullName, role.getTitle(), branchId, phone);
     }

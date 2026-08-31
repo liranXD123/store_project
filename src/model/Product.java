@@ -3,24 +3,25 @@ package model;
 import java.io.Serializable;
 import java.util.Objects;
 
+// Class representing a product in the store system, implementing Serializable to allow product objects to be serialized for storage or transmission.
 public class Product implements Serializable {
-    private static final long serialVersionUID = 1L; // מזהה ייחודי לגרסה של המחלקה, משמש בעת סריאליזציה כדי לוודא שהגרסה של המחלקה תואמת לגרסה של האובייקט המוסר
+    private static final long serialVersionUID = 1L; // Unique identifier for serialization, ensuring that a deserialized object matches the version of the class used to serialize it.
 
-    // שדות המוצר   
+    // Product fields
     private String id;
     private String name;
     private String category;
     private double basePrice;
 
     public Product(String id, String name, String category, double basePrice) {
-        // בנאי למחלקת Product שמקבל את כל השדות הנדרשים ליצירת אובייקט מוצר חדש
+        // Constructor for the Product class that accepts all required fields for creating a new product object
         this.id = id;
         this.name = name;
         this.category = category;
         this.basePrice = basePrice;
     }
 
-    // גטרים לשדות המוצר
+    // Getters for the product fields
     public String getId() { return id; }
     public String getName() { return name; }
     public String getCategory() { return category; }
@@ -28,7 +29,7 @@ public class Product implements Serializable {
 
     @Override
     public boolean equals(Object o) {
-        // בדיקה אם האובייקט הנוכחי הוא אותו אובייקט כמו האובייקט המועבר, ואם לא, בדיקה אם הוא מאותו סוג והשוואת מזהה המוצר
+        // Checking if the current object is the same object as the one passed, and if not, checking if it's of the same type and comparing the product ID
         if (this == o) return true;
         if (!(o instanceof Product)) return false;
         Product product = (Product) o;
@@ -37,13 +38,13 @@ public class Product implements Serializable {
 
     @Override
     public int hashCode() {
-        // החזרת קוד hash מבוסס על מזהה המוצר, משמש לאחסון האובייקט במבני נתונים כמו HashMap או HashSet
+        // Returning the hash code based on the product ID, used for storing the object in data structures like HashMap or HashSet
         return Objects.hash(id);
     }
 
     @Override
     public String toString() {
-        // החזרת מחרוזת שמייצגת את האובייקט, כולל מזהה המוצר, שם, קטגוריה ומחיר בסיס    
+        // Returning a string representation of the object, including the product ID, name, category, and base price
         return String.format("Product[%s - %s (%s) - ₪%.2f]", id, name, category, basePrice);
     }
 }

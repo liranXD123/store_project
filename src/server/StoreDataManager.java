@@ -19,6 +19,7 @@ import model.customers.NewCustomer;
 import model.customers.ReturningCustomer;
 import model.customers.VipCustomer;
 
+// Singleton class responsible for managing store data, including users, branches, customers, products, and sales history. It provides methods for authentication, adding users/customers, processing purchases, and retrieving various data snapshots.
 public class StoreDataManager {
     private static StoreDataManager instance;
 
@@ -33,7 +34,8 @@ public class StoreDataManager {
     }
 
     public static synchronized StoreDataManager getInstance() {
-        // יצירת מופע יחיד של StoreDataManager (Singleton Pattern)
+        // Creating a single instance of StoreDataManager (Singleton Pattern) to ensure
+        // that all parts of the application access the same data manager instance
         if (instance == null) {
             instance = new StoreDataManager();
         }
@@ -41,13 +43,13 @@ public class StoreDataManager {
     }
 
     private void initDefaultData() {
-        // סניפים
+        // Branches
         Branch b1 = new Branch("B1", "Tel Aviv");
         Branch b2 = new Branch("B2", "Haifa");
         branches.put("B1", b1);
         branches.put("B2", b2);
 
-        // משתמשי מערכת
+        // Users
         User admin = new User("E101", "Avi Cohen", "012345678", "050-1111111", "12-345-678", "B1", Role.ADMIN,
                 "admin123");
         User shiftMgr = new User("E102", "Dana Levi", "023456789", "052-2222222", "12-345-679", "B1",
@@ -58,7 +60,7 @@ public class StoreDataManager {
         users.put(shiftMgr.getEmployeeId(), shiftMgr);
         users.put(cashier.getEmployeeId(), cashier);
 
-        // מוצרים ומלאי
+        // Products and initial stock for branches
         Product p1 = new Product("P01", " Polo Shirt", "Shirts", 120.0);
         Product p2 = new Product("P02", "Jeans", "Pants", 250.0);
         Product p3 = new Product("P03", "Leather Jacket", "Jackets", 450.0);
@@ -71,7 +73,7 @@ public class StoreDataManager {
         b2.addStock(p1, 10);
         b2.addStock(p3, 8);
 
-        // לקוחות ראשוניים
+        // initializing customers
         Customer c1 = new NewCustomer("C01", "Ronnie Kline", "050-9999991");
         Customer c2 = new ReturningCustomer("C02", "Michal Ziv", "050-9999992");
         Customer c3 = new VipCustomer("C03", "Alon Doron", "050-9999993");
@@ -81,7 +83,7 @@ public class StoreDataManager {
     }
 
     public User authenticate(String employeeId, String password) throws AuthenticationException {
-        // אימות משתמש לפי מזהה וסיסמה
+        // Authenticating a user by their ID and password
         User u = users.get(employeeId);
         if (u == null || !u.validatePassword(password)) {
             throw new AuthenticationException("Invalid user ID or password.");
@@ -90,7 +92,8 @@ public class StoreDataManager {
     }
 
     public synchronized boolean addUser(User user) {
-        // הוספת משתמש חדש למערכת, אם הוא כבר קיים לפי מזהה העובד, מחזירים false
+        // Adding a new user to the system, returning false if they already exist by
+        // employee ID
         if (users.containsKey(user.getEmployeeId())) {
             return false;
         }
@@ -99,7 +102,8 @@ public class StoreDataManager {
     }
 
     public synchronized boolean addCustomer(Customer customer) {
-        // הוספת לקוח חדש למערכת, אם הוא כבר קיים לפי מזהה הלקוח, מחזירים false
+        // Adding a new customer to the system, returning false if they already exist by
+        // customer ID
         if (customers.containsKey(customer.getId())) {
             return false;
         }
@@ -108,33 +112,37 @@ public class StoreDataManager {
     }
 
     public synchronized void registerCustomer(Customer customer) {
-        // רישום לקוח חדש במערכת והוספתו למאגר הלקוחות
+        // Registering a new customer in the system and adding them to the customers
+        // database
         customers.put(customer.getId(), customer);
         LoggerService.getInstance().log(LoggerService.LogType.CUSTOMERS, "Registered customer: " + customer);
     }
 
     public synchronized void registerEmployee(User user) {
-        // רישום עובד חדש במערכת והוספתו למאגר המשתמשים
+        // Registering a new employee in the system and adding them to the users
+        // database
         users.put(user.getEmployeeId(), user);
         LoggerService.getInstance().log(LoggerService.LogType.EMPLOYEES, "Registered employee: " + user);
     }
 
     public synchronized SaleRecord processPurchase(String branchId, String empId, String custId,
             String prodId, int qty) throws OutOfStockException {
-                // עיבוד רכישה: הפחתת מלאי, חישוב מחיר סופי לפי סוג הלקוח, יצירת רשומת מכירה
+        // Processing a purchase transaction, reducing stock, calculating final price
+        // based on customer type, and logging the sale record. Throws an exception if
+        // the product is out of stock.
         Branch branch = branches.get(branchId);
         Product prod = products.get(prodId);
         Customer cust = customers.get(custId);
 
         if (branch == null || prod == null || cust == null) {
-            // בדיקה אם הסניף, המוצר או הלקוח אינם קיימים במערכת
+            // Throwing an exception if the branch, product, or customer ID is invalid
             throw new IllegalArgumentException("Invalid branch, product, or customer ID");
         }
 
-        // הפחתת מלאי מסונכרנת
+        // Reducing stock in a thread-safe manner
         branch.reduceStock(prod, qty);
 
-        // חישוב מחיר סופי בהתאם ל-Strategy/Polymorphism של הלקוח
+        // Calculating final price based on customer type
         double baseTotal = prod.getBasePrice() * qty;
         double finalPrice = cust.calculateFinalPrice(baseTotal);
 
@@ -147,27 +155,27 @@ public class StoreDataManager {
     }
 
     public List<SaleRecord> getSalesHistory() {
-        // החזרת רשימת כל רשומות המכירה שנעשו במערכת
+        // Returning a list of all sale records in the system
         return Collections.unmodifiableList(salesHistory);
     }
 
     public Map<String, Customer> getCustomers() {
-        // החזרת מפת כל הלקוחות במערכת
+        // Returning a map of all customers in the system
         return customers;
     }
 
     public Map<String, Branch> getBranches() {
-        // החזרת מפת כל הסניפים במערכת
+        // Returning a map of all branches in the system
         return branches;
     }
 
     public Map<String, Product> getProducts() {
-        // החזרת מפת כל המוצרים במערכת
+        // Returning a map of all products in the system
         return products;
     }
 
     public Map<String, User> getUsers() {
-        // החזרת מפת כל המשתמשים במערכת
+        // Returning a map of all users in the system
         return users;
     }
 }

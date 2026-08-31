@@ -1,21 +1,21 @@
 package model.customers;
 
-// לקוח VIP - 20% הנחה קבועה
+// Class representing a VIP customer in the store system, extending the abstract Customer class.
 public class VipCustomer extends Customer {
     public VipCustomer(String id, String fullName, String phone) {
-        // קריאה לבנאי של המחלקה האב Customer עם מזהה, שם מלא ומספר טלפון
+        // Calling the constructor of the parent Customer class with ID, full name, and phone number
         super(id, fullName, phone);
     }
 
     @Override
     public double calculateFinalPrice(double originalPrice) {
-        // החזרת המחיר הסופי לאחר חישוב ההנחה ללקוח VIP - 20% הנחה
-        return originalPrice * 0.80; // 20% הנחה
+        // Returning the final price after calculating the discount for a VIP customer - 20% discount
+        return originalPrice * 0.80; // 20% discount
     }
 
     @Override
     public String getCustomerType() {
-        // החזרת סוג הלקוח כ-VIP
+        // Returning the customer type as VIP
         return "VIP";
     }
 }

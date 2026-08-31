@@ -7,13 +7,14 @@ import java.io.PrintWriter;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 
+// LoggerService class for logging various events and messages in the store system, implemented as a singleton to ensure a single instance throughout the application.
 public class LoggerService {
     private static LoggerService instance;
     private static final String LOG_DIR = "logs";
     private static final DateTimeFormatter DTF = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
 
     private LoggerService() {
-        // יצירת תיקיית הלוגים אם היא לא קיימת
+        //Creating the logs directory if it doesn't exist to store log files
         File dir = new File(LOG_DIR);
         if (!dir.exists()) {
             dir.mkdirs();
@@ -21,7 +22,7 @@ public class LoggerService {
     }
 
     public static synchronized LoggerService getInstance() {
-        // יצירת מופע יחיד של LoggerService (Singleton Pattern)
+        // Creating a single instance of LoggerService (Singleton Pattern)
         if (instance == null) {
             instance = new LoggerService();
         }
@@ -29,7 +30,7 @@ public class LoggerService {
     }
 
     public enum LogType {
-        // סוגי הלוגים השונים במערכת
+        // Enum representing different types of logs in the system
         EMPLOYEES("employees.log"),
         CUSTOMERS("customers.log"),
         TRANSACTIONS("sales_transactions.log"),
@@ -42,7 +43,7 @@ public class LoggerService {
     }
 
     public synchronized void log(LogType type, String message) {
-        // כתיבת הודעת לוג לקובץ המתאים לפי סוג הלוג
+        // Writing a log message to the appropriate file based on the log type
         File file = new File(LOG_DIR + File.separator + type.getFileName());
         try (PrintWriter pw = new PrintWriter(new FileWriter(file, true))) {
             String timestamp = LocalDateTime.now().format(DTF);

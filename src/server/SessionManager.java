@@ -6,8 +6,8 @@ import java.util.concurrent.ConcurrentHashMap;
 
 public class SessionManager {
     private static SessionManager instance;
-    
-    // שינינו ל-Map: עכשיו שומרים גם את מזהה העובד וגם את אובייקט התקשורת שלו
+
+    // Map to keep track of active sessions, mapping user IDs to their corresponding ClientHandler instances
     private final Map<String, ClientHandler> activeSessions = new ConcurrentHashMap<>();
 
     private SessionManager() {}
@@ -18,8 +18,8 @@ public class SessionManager {
         }
         return instance;
     }
-    
-    // עדכנו את הפונקציה כך שתקבל גם את ה-handler של מי שמתחבר
+
+    //Function to handle user login, ensuring that a user cannot log in from multiple devices simultaneously. If a duplicate login attempt is detected, a DuplicateLoginException is thrown.
     public synchronized void login(String userId, ClientHandler handler) throws DuplicateLoginException {
         if (activeSessions.containsKey(userId)) {
             throw new DuplicateLoginException("User " + userId + " is already logged in from another device!");
@@ -28,24 +28,24 @@ public class SessionManager {
     }
 
     public synchronized void logout(String userId) {
-        // הסרת המשתמש מהרשימה של המשתמשים המחוברים
+        // Removing the user's session from the active sessions map upon logout, allowing them to log in again from another device if desired.
         activeSessions.remove(userId);
     }
 
     public synchronized boolean isUserLoggedIn(String userId) {
-        // בדיקה אם המשתמש מחובר כרגע
+        // Checking if a user is currently logged in by verifying their presence in the active sessions map
         return activeSessions.containsKey(userId);
     }
 
-    // פונקציה חדשה שמחזירה את ה-handler של המשתמש המחובר לפי מזהה העובד
+    // Function to retrieve the ClientHandler instance for a logged-in user by their ID
     public synchronized ClientHandler getClientHandler(String userId) {
         return activeSessions.get(userId);
     }
-    // פונקציה חדשה שמחזירה את כל המשתמשים המחוברים
+    // Function to retrieve all active sessions
     public synchronized Map<String, ClientHandler> getActiveSessions() {
         return activeSessions;
     }
-    // פונקציה חדשה שמחזירה את ה-handler של המשתמש לפי מזהה העובד   
+    // Function to retrieve the ClientHandler instance for a logged-in user by their ID
     public synchronized ClientHandler getHandler(String userId) {
         return activeSessions.get(userId);
     }

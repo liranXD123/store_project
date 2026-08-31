@@ -8,6 +8,7 @@ import java.util.List;
 
 import model.SaleRecord;
 
+// Class responsible for generating reports in various formats, such as JSON and Word documents, based on sales data.
 public class ReportGenerator {
 
     // הפקת דוח בפורמט JSON (נקי ללא ספריות חיצוניות)

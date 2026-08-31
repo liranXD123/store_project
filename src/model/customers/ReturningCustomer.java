@@ -1,21 +1,21 @@
 package model.customers;
 
-// לקוח חוזר - 10% הנחה
+// Class representing a returning customer in the store system, extending the abstract Customer class.
 public class ReturningCustomer extends Customer {
-    // בנאי למחלקת ReturningCustomer שמקבל מזהה, שם מלא ומספר טלפון
+    // Constructor for the ReturningCustomer class that accepts all required fields for creating a new returning customer object
     public ReturningCustomer(String id, String fullName, String phone) {
         super(id, fullName, phone);
     }
 
     @Override
     public double calculateFinalPrice(double originalPrice) {
-        // החזרת המחיר הסופי לאחר חישוב ההנחה ללקוח חוזר - 10% הנחה
+        // Returning the final price after calculating the discount for a returning customer - 10% discount
         return originalPrice * 0.90;
     }
 
     @Override
     public String getCustomerType() {
-        // החזרת סוג הלקוח כ-Returning
+        // Returning the customer type as RETURNING
         return "RETURNING";
     }
 }

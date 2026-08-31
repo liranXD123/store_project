@@ -1,21 +1,21 @@
 package model.customers;
 
-// לקוח חדש - ללא הנחה מיוחדת או הנחת הצטרפות חד פעמית (5%)
+// Class representing a new customer in the store system, extending the abstract Customer class.
 public class NewCustomer extends Customer {
     public NewCustomer(String id, String fullName, String phone) {
-        // קריאה לבנאי של המחלקה האב Customer עם מזהה, שם מלא ומספר טלפון
+        // Calling the constructor of the parent Customer class with ID, full name, and phone number
         super(id, fullName, phone);
     }
 
     @Override
     public double calculateFinalPrice(double originalPrice) {
-        // החזרת המחיר הסופי לאחר חישוב ההנחה ללקוח חדש - 5% הנחה
+        // Returning the final price after calculating the discount for a new customer - 5% discount
         return originalPrice * 0.95;
     }
 
     @Override
     public String getCustomerType() {
-        // החזרת סוג הלקוח כ-NEW
+        // Returning the customer type as NEW
         return "NEW";
     }
 }

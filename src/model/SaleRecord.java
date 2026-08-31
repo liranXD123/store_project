@@ -4,10 +4,11 @@ import java.io.Serializable;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 
+// Class representing a sale record in the store system, implementing Serializable to allow sale record objects to be serialized for storage or transmission.
 public class SaleRecord implements Serializable {
-    private static final long serialVersionUID = 1L; // מזהה ייחודי לגרסה של המחלקה, משמש בעת סריאליזציה כדי לוודא שהגרסה של המחלקה תואמת לגרסה של האובייקט המוסר
+    private static final long serialVersionUID = 1L; // Unique identifier for the class version, used during serialization to ensure the class version matches the serialized object
 
-    // שדות הרישום של המכירה
+    // Sale record fields
     private String transactionId;
     private String branchId;
     private String employeeId;
@@ -19,7 +20,7 @@ public class SaleRecord implements Serializable {
     private double finalPrice;
     private LocalDateTime timestamp;
 
-    // בנאי למחלקת SaleRecord שמקבל את כל השדות הנדרשים ליצירת אובייקט רישום מכירה חדש
+    // Constructor for the SaleRecord class that accepts all required fields for creating a new sale record object
     public SaleRecord(String transactionId, String branchId, String employeeId, 
                       String customerId, String productId, String productName, 
                       String category, int quantity, double finalPrice) {
@@ -35,7 +36,7 @@ public class SaleRecord implements Serializable {
         this.timestamp = LocalDateTime.now();
     }
 
-    // גטרים לשדות הרישום של המכירה
+    // Getters for the sale record fields
     public String getTransactionId() { return transactionId; }
     public String getBranchId() { return branchId; }
     public String getEmployeeId() { return employeeId; }
@@ -47,7 +48,7 @@ public class SaleRecord implements Serializable {
     public double getFinalPrice() { return finalPrice; }
     public LocalDateTime getTimestamp() { return timestamp; }
 
-    // החזרת מחרוזת שמייצגת את אובייקט SaleRecord, כולל כל השדות המרכזיים
+    // Returning a string representation of the SaleRecord object, including all the key fields
     public String toLogString() {
         DateTimeFormatter dtf = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
         return String.format("[%s] Trans: %s | Branch: %s | Emp: %s | Cust: %s | Item: %s (x%d) | Total: ₪%.2f",

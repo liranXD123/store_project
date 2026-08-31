@@ -5,7 +5,7 @@ import java.net.Socket;
 import java.util.Scanner;
 
 public class StoreClient {
-    // הגדרת כתובת השרת והפורט
+      //  Defining server connection parameters and initializing variables for communication and user state
     private static final String SERVER_HOST = "localhost";
     private static final int SERVER_PORT = 7000;
     private static PrintWriter out;
@@ -13,14 +13,14 @@ public class StoreClient {
     private static String currentUserRole = "";
 
     public static void main(String[] args) {
-        // התחברות לשרת באמצעות Socket
+        // Establishing a connection to the server and setting up input/output streams for communication
         try (Socket socket = new Socket(SERVER_HOST, SERVER_PORT);
                 BufferedReader in = new BufferedReader(new InputStreamReader(socket.getInputStream()));
                 Scanner scanner = new Scanner(System.in)) {
 
             out = new PrintWriter(socket.getOutputStream(), true);
 
-            // יצירת Thread שמאזין להודעות מהשרת ומדפיס אותן למסך
+            // Creating a Thread to listen for messages from the server and print them to the screen
             Thread listener = new Thread(() -> {
                 try {
                     String msg;
@@ -46,7 +46,7 @@ public class StoreClient {
             // Main user loop
             while (true) {
                 String choice = scanner.nextLine().trim();
-                // בדיקה אם המשתמש רוצה לצאת מהמערכת או להציג את התפריט
+                // Checking if the user wants to exit the system or view the menu
                 if (choice.equals("9") || choice.equalsIgnoreCase("exit")) {
                     out.println("EXIT");
                     break;
@@ -58,13 +58,13 @@ public class StoreClient {
             }
 
         } catch (Exception e) {
-            // טיפול בחריגות בעת חיבור לשרת או קריאה/כתיבה ל-Socket
+            // Handling exceptions that may occur during server connection or communication
             System.err.println("Server connection error: " + e.getMessage());
         }
     }
 
     private static void printMenu() {
-        // הצגת התפריט הראשי למשתמש
+        // Displaying the main menu for the user
         System.out.println("\n--- MAIN MENU ---");
         System.out.println("1. Login (LOGIN)");
         System.out.println("2. View Branch Inventory");
@@ -87,9 +87,9 @@ public class StoreClient {
 
     private static void processUserChoice(String choice, Scanner scanner) {
         switch (choice) {
-            // טיפול בבחירת המשתמש לפי מספר הפעולה שנבחרה
+            // Handling user choice based on the selected action number
             case "1":
-                // בקשת פרטי התחברות מהמשתמש ושליחת בקשת התחברות לשרת
+                // Requesting login credentials from the user and sending the login request to the server
                 System.out.print("Enter Employee ID: ");
                 String empId = scanner.nextLine();
                 System.out.print("Enter Password: ");
@@ -97,11 +97,11 @@ public class StoreClient {
                 out.println("LOGIN::" + empId + "::" + pass);
                 break;
             case "2":
-                // בקשת הצגת מלאי הסניף מהשרת
+                // Requesting to view branch inventory from the server
                 out.println("GET_INVENTORY");
                 break;
             case "3":
-                // בקשת ביצוע מכירה מהמשתמש ושליחת בקשה לשרת
+                // Requesting to process a sale from the user and sending the request to the server
                 System.out.print("Customer ID: ");
                 String custId = scanner.nextLine();
                 System.out.print("Product ID: ");
@@ -111,12 +111,12 @@ public class StoreClient {
                 out.println("BUY::" + custId + "::" + prodId + "::" + qty);
                 break;
             case "4":
-                // בקשת הצגת כל הלקוחות מהשרת
+                // Requesting to view all customers from the server
                 out.println("GET_CUSTOMERS");
                 break;
             case "5":
             case "6":
-                // בקשת יצירת דוח JSON או Word מהמשתמש ושליחת בקשה לשרת
+                // Requesting to generate a JSON or Word report from the user and sending the request to the server
                 System.out.println("Select Filter Type:");
                 System.out.println("1. ALL (Entire Network)");
                 System.out.println("2. BRANCH (Filter by Branch ID)");
@@ -129,45 +129,45 @@ public class StoreClient {
                 String filterValue = "ALL";
                 
                 if (filterChoice.equals("2")) {
-                    // בקשה למזהה הסניף מהמשתמש
+                    // Requesting the branch ID from the user
                     filterType = "BRANCH";
                     System.out.print("Enter Branch ID (e.g., B1): ");
                     filterValue = scanner.nextLine();
                 } else if (filterChoice.equals("3")) {
-                    // בקשה למזהה המוצר מהמשתמש
+                    // Requesting the product ID from the user
                     filterType = "PRODUCT";
                     System.out.print("Enter Product ID (e.g., P01): ");
                     filterValue = scanner.nextLine();
                 } else if (filterChoice.equals("4")) {
-                    // בקשה לשם הקטגוריה מהמשתמש
+                    // Requesting the category name from the user
                     filterType = "CATEGORY";
                     System.out.print("Enter Category (e.g., Shirts): ");
                     filterValue = scanner.nextLine();
                 }
-                // שליחת הפקודה לשרת בהתאם לבחירת המשתמש (דוח JSON או Word) עם סוג וסינון
+                // Sending the command to the server based on the user's choice (JSON or Word report) with type and filter
                 String command = choice.equals("5") ? "REPORT_JSON" : "REPORT_WORD";
                 out.println(command + "::" + filterType + "::" + filterValue);
                 break;
             case "7":
-                // בקשה למזהה הסניף שאליו המשתמש רוצה לשלוח הודעת צ'אט
+                // Requesting the branch ID to which the user wants to send a chat message
                 System.out.print("Enter target Branch ID for chat (e.g., B2): ");
                 String target = scanner.nextLine();
                 out.println("CHAT_REQUEST::" + target);
                 break;
             case "8":
-                // התחלת מצב צ'אט שבו המשתמש יכול לשלוח הודעות ישירות לשרת עד שהוא בוחר לצאת ממצב הצ'אט
+                // Allowing the user to enter chat mode to send messages directly, with an option to exit back to the main menu
                 inChatMode = true;
                 System.out.println(
                         "\n--- Entered Chat Mode. Type your messages directly. Type '/exit' to return to main menu. ---");
                 System.out.print("[Chat Mode] Type message (or '/exit'): ");
                 
-                // לולאה שמאפשרת למשתמש לשלוח הודעות צ'אט עד שהוא בוחר לצאת ממצב הצ'אט
+                    // Loop to allow the user to send chat messages until they choose to exit chat mode
                 while (true) {
                     String msg = scanner.nextLine();
 
-                    // יציאה ממצב צ'אט
+                    // Checking if the user wants to exit chat mode and updating the server accordingly
                     if (msg.equalsIgnoreCase("/exit")) {
-                        /// עדכון המתווך שהמשתמש יצא ממצב הצ'אט
+                        /// Updating the server that the user has left chat mode
                         out.println("LEAVE_CHAT");
                         inChatMode = false;
                         System.out.println("\n--- Exited Chat Mode ---");
@@ -175,17 +175,17 @@ public class StoreClient {
                         break;
                     }
 
-                    // שליחת ההודעה לשרת
+                    // Sending the message to the server
                     out.println("CHAT_MSG::" + msg);
                 }
                 break;
             case "10":
-                // בקשה למשתמש להזין פרטי עובד חדש והוספתו למערכת, אך רק אם המשתמש הנוכחי הוא מנהל (ADMIN)
+                // Requesting the user to enter new employee details and adding them to the system, but only if the current user is an admin (ADMIN)
                 if (!"ADMIN".equals(currentUserRole)) {
                     System.out.println("Permission denied. Admins only.");
                     break;
                 }
-                // בקשה למשתמש להזין את פרטי העובד החדש ושליחת הפקודה לשרת להוספתו
+                // Requesting the user to enter the details of the new employee and sending the command to the server to add them
                 System.out.print("Enter New Employee ID (e.g. E104): ");
                 String newEmpId = scanner.nextLine();
                 System.out.print("Enter Full Name: ");
@@ -206,7 +206,7 @@ public class StoreClient {
                         + branch + "::" + role + "::" + pwd);
                 break;
             case "11":
-                // בקשה למשתמש להזין פרטי לקוח חדש והוספתו למערכת
+                // Requesting the user to enter new customer details and adding them to the system
                 System.out.print("Enter Customer ID (e.g. C04): ");
                 String cId = scanner.nextLine();
                 System.out.print("Enter Full Name: ");
@@ -218,12 +218,12 @@ public class StoreClient {
                 out.println("ADD_CUSTOMER::" + cId + "::" + cName + "::" + cPhone + "::" + cType);
                 break;
             case "12":
-                // בקשה למשתמש להצטרף לשיחת צ'אט פעילה בסניף אחר, אך רק אם המשתמש הנוכחי הוא מנהל (SHIFT_MANAGER או ADMIN)
+                // Requesting the user to join an active chat session in a different branch, but only if the current user is a manager (SHIFT_MANAGER or ADMIN)
                 if (!"SHIFT_MANAGER".equals(currentUserRole) && !"ADMIN".equals(currentUserRole)) {
                     System.out.println("Permission denied. Managers only.");
                     break;
                 }
-                // תיקון: מבקשים את מספר העובד שאליו רוצים להאזין
+                // Correction: Requesting the employee ID to which they want to listen
                 System.out.print("Enter Employee ID to monitor/join (e.g. E103): ");
                 String targetUser = scanner.nextLine();
                 out.println("JOIN_CHAT::" + targetUser);
@@ -233,11 +233,11 @@ public class StoreClient {
                 System.out.print("[Chat Mode] Type message (or '/exit'): ");
                 
                 while (true) {
-                    // לולאה שמאפשרת למשתמש לשלוח הודעות צ'אט עד שהוא בוחר לצאת ממצב הצ'אט
+                    // Loop to allow the user to send chat messages until they choose to exit chat mode
                     String msg = scanner.nextLine();
                     if (msg.equalsIgnoreCase("/exit")) {
                         inChatMode = false;
-                        out.println("LEAVE_CHAT"); // עדכון המתווך שהמשתמש יצא
+                        out.println("LEAVE_CHAT"); // Updating the server that the user has left
                         System.out.println("\n--- Exited Chat Mode ---");
                         System.out.print("\nSelect an action (type 'menu' to see options): ");
                         break;
@@ -251,7 +251,7 @@ public class StoreClient {
     }
 
     private static void handleServerMessage(String message) {
-        // טיפול בהודעות שמתקבלות מהשרת והצגתן למשתמש בהתאם לסוג ההודעה
+        // Handling messages received from the server and displaying them to the user accordingly
         if (message.startsWith("LOGIN_SUCCESS::")) {
             String[] p = message.split("::");
             currentUserRole = p[2];
