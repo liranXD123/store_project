@@ -4,6 +4,7 @@ import java.util.Vector;
 
 import client.commands.AddCustomerCommand;
 import client.commands.AddEmployeeCommand;
+import client.commands.AddProductCommand;
 import client.commands.ExitCommand;
 import client.commands.JoinChatCommand;
 import client.commands.JsonReportCommand;
@@ -41,6 +42,7 @@ public class ClientMenu {
         list.add(new WordReportCommand());
         list.add(new RequestChatCommand());
         list.add(new SendChatCommand());
+        list.add(new AddProductCommand());
         list.add(new RestockCommand());
         list.add(new ViewActiveChatsCommand());
         list.add(new JoinChatCommand());

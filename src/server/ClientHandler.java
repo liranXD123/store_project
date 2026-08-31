@@ -90,6 +90,9 @@ public class ClientHandler implements Runnable, StoreObserver {
                 case "BUY":
                     handleBuy(parts[1], parts[2], Integer.parseInt(parts[3]));
                     break;
+                case "ADD_PRODUCT":
+                    handleAddProduct(parts);
+                    break;
                 case "RESTOCK":
                     handleRestock(parts[1], Integer.parseInt(parts[2]));
                     break;
@@ -338,6 +341,70 @@ public class ClientHandler implements Runnable, StoreObserver {
             server.notifyInventoryChanged(currentUser.getBranchId());
         } catch (OutOfStockException | IllegalArgumentException e) {
             out.println("ERROR::" + e.getMessage());
+        }
+    }
+
+    // Adding a product that the network did not sell until now. The product itself belongs to
+    // the whole network, while the quantity that arrived belongs to the branch that added it
+    private void handleAddProduct(String[] parts) {
+        if (currentUser.getRole() != Role.SHIFT_MANAGER && currentUser.getRole() != Role.ADMIN) {
+            out.println("ERROR::Permission denied. Managers only.");
+            return;
+        }
+        if (parts.length < 6) {
+            out.println("ERROR::Missing product details.");
+            return;
+        }
+        String id = parts[1];
+        String name = parts[2];
+        String category = parts[3];
+
+        if (id.isEmpty() || name.isEmpty() || category.isEmpty()) {
+            out.println("ERROR::The product ID, name and category cannot be empty.");
+            return;
+        }
+
+        // The price and the quantity are checked separately, so the employee is told
+        // exactly which of the two was not written as a number
+        double basePrice;
+        try {
+            basePrice = Double.parseDouble(parts[4]);
+        } catch (NumberFormatException e) {
+            out.println("ERROR::The price must be a number, for example 149.90");
+            return;
+        }
+        int quantity;
+        try {
+            quantity = Integer.parseInt(parts[5]);
+        } catch (NumberFormatException e) {
+            out.println("ERROR::The starting quantity must be a whole number.");
+            return;
+        }
+
+        if (basePrice <= 0) {
+            out.println("ERROR::The price must be greater than zero.");
+            return;
+        }
+        if (quantity < 0) {
+            out.println("ERROR::The starting quantity cannot be negative.");
+            return;
+        }
+
+        Product product = new Product(id, name, category, basePrice);
+        boolean added = StoreDataManager.getInstance()
+                .addProduct(product, currentUser.getBranchId(), quantity);
+        if (!added) {
+            out.println("ERROR::Product ID already exists.");
+            return;
+        }
+
+        LoggerService.getInstance().log(LoggerService.LogType.TRANSACTIONS,
+                "Product added: " + product + " with " + quantity + " units in branch "
+                        + currentUser.getBranchId() + " by employee " + currentUser.getEmployeeId());
+        out.println("ADD_PRODUCT_SUCCESS::" + id + "::" + name);
+
+        if (quantity > 0) {
+            server.notifyInventoryChanged(currentUser.getBranchId());
         }
     }
 

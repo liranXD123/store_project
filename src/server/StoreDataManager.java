@@ -94,6 +94,26 @@ public class StoreDataManager {
         return true;
     }
 
+    // Adding a brand new product to the catalogue of the network, together with the amount
+    // of it that arrived into the branch that added it.
+    // Returning false when a product with that ID is already in the catalogue
+    public synchronized boolean addProduct(Product product, String branchId, int quantity) {
+        if (products.containsKey(product.getId())) {
+            return false;
+        }
+        Branch branch = branches.get(branchId);
+        if (branch == null) {
+            throw new IllegalArgumentException("Invalid branch ID");
+        }
+
+        products.put(product.getId(), product);
+        if (quantity > 0) {
+            branch.addStock(product, quantity);
+        }
+        database.saveProducts(products, branches);
+        return true;
+    }
+
     // Adding stock of an existing product to a branch, which is the purchase side of the
     // inventory management (buying goods in, as opposed to selling them to a customer)
     public synchronized void restockProduct(String branchId, String prodId, int qty) {

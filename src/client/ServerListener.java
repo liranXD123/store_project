@@ -109,6 +109,9 @@ public class ServerListener implements Runnable {
         } else if (message.startsWith("RESTOCK_SUCCESS::")) {
             String[] p = message.split("::");
             System.out.println("\n[STOCK] Added " + p[2] + " units of product " + p[1] + " to your branch.");
+        } else if (message.startsWith("ADD_PRODUCT_SUCCESS::")) {
+            String[] p = message.split("::");
+            System.out.println("\n[STOCK] New product added to the network: " + p[1] + " - " + p[2]);
         } else if (message.equals("CUSTOMERS_UPDATED")) {
             System.out.println("\n[SERVER ALERT] Network customer list updated.");
         } else if (message.startsWith("BUY_SUCCESS::")) {

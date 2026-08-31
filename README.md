@@ -97,9 +97,10 @@ rebuilt for your role, so the numbers change — type `menu` if you are unsure.
 Everything above, plus:
 
 ```
-9.  [MANAGER] Restock Product (buy into branch)
-10. [MANAGER] View Active Chats in Branch
-11. [MANAGER] Join Active Chat in Branch
+9.  [MANAGER] Add New Product
+10. [MANAGER] Restock Product (buy into branch)
+11. [MANAGER] View Active Chats in Branch
+12. [MANAGER] Join Active Chat in Branch
 ```
 
 ### Admin
@@ -107,8 +108,8 @@ Everything above, plus:
 Everything above, plus:
 
 ```
-12. [ADMIN] View All Employees
-13. [ADMIN] Add New Employee
+13. [ADMIN] View All Employees
+14. [ADMIN] Add New Employee
 ```
 
 ## Starting data
@@ -147,6 +148,16 @@ Everything above, plus:
 4. The price shown is already reduced according to the customer's type.
 
 Every employee of that branch is told that the stock changed.
+
+### Add a product the network never sold before
+
+1. Log in as `E102` / `mgr123` (branch B1).
+2. Choose **Add New Product** and enter a product ID, name, category, price, and how many units
+   arrived into your branch — for example `P04`, `Wool Scarf`, `Accessories`, `89.90`, `12`.
+
+The product joins the catalogue of the whole network, while the quantity you entered is stock in
+your own branch. Enter `0` if none of it has arrived yet; other branches then stock it themselves
+with **Restock Product**.
 
 ### Restock a branch
 
