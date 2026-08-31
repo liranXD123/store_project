@@ -1,0 +1,12 @@
+# The JSON database written by the server at runtime
+db/
+
+# The log files written by the server at runtime
+logs/
+
+# Compiler output
+out/
+
+# IntelliJ project files
+.idea/
+*.iml

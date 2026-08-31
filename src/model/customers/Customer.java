@@ -12,12 +12,14 @@ public abstract class Customer implements Serializable {
     // Customer fields
     private String id;
     private String fullName;
+    private String idNumber;
     private String phone;
 
-    public Customer(String id, String fullName, String phone) {
+    public Customer(String id, String fullName, String idNumber, String phone) {
         // Constructor for the Customer class that accepts all required fields for creating a new customer object
         this.id = id;
         this.fullName = fullName;
+        this.idNumber = idNumber;
         this.phone = phone;
     }
 
@@ -25,6 +27,7 @@ public abstract class Customer implements Serializable {
     public void setId(String id) { this.id = id; }
     public String getId() { return id; }
     public String getFullName() { return fullName; }
+    public String getIdNumber() { return idNumber; }
     public String getPhone() { return phone; }
 
     // Calculation of final price based on customer type and their offers
@@ -48,8 +51,8 @@ public abstract class Customer implements Serializable {
 
     @Override
     public String toString() {
-        // Returning a string representation of the object, including customer type, ID, full name, and phone number
-        return String.format("[%s] ID: %s | Name: %s | Phone: %s", 
-                getCustomerType(), id, fullName, phone);
+        // Returning a string representation of the object, including customer type, ID, full name, ID number and phone number
+        return String.format("[%s] ID: %s | Name: %s | T.Z: %s | Phone: %s",
+                getCustomerType(), id, fullName, idNumber, phone);
     }
 }

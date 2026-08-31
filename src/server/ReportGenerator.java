@@ -4,20 +4,68 @@ import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.io.PrintWriter;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import model.SaleRecord;
 
 // Class responsible for generating reports in various formats, such as JSON and Word documents, based on sales data.
 public class ReportGenerator {
 
-    // הפקת דוח בפורמט JSON (נקי ללא ספריות חיצוניות)
+    // Counting how many sales each branch made and how much money it brought in.
+    // The keys of both maps are branch IDs
+    private static Map<String, Integer> countSalesByBranch(List<SaleRecord> sales) {
+        Map<String, Integer> counts = new HashMap<String, Integer>();
+        for (int i = 0; i < sales.size(); i++) {
+            String branchId = sales.get(i).getBranchId();
+            Integer current = counts.get(branchId);
+            counts.put(branchId, current == null ? 1 : current + 1);
+        }
+        return counts;
+    }
+
+    private static Map<String, Double> sumRevenueByBranch(List<SaleRecord> sales) {
+        Map<String, Double> totals = new HashMap<String, Double>();
+        for (int i = 0; i < sales.size(); i++) {
+            SaleRecord s = sales.get(i);
+            Double current = totals.get(s.getBranchId());
+            totals.put(s.getBranchId(), current == null ? s.getFinalPrice() : current + s.getFinalPrice());
+        }
+        return totals;
+    }
+
+    // Summing the money of all the sales in the report
+    private static double sumRevenue(List<SaleRecord> sales) {
+        double total = 0;
+        for (int i = 0; i < sales.size(); i++) {
+            total += sales.get(i).getFinalPrice();
+        }
+        return total;
+    }
+
+    // Producing the report in JSON format, written by hand without any external library
     public static String generateSalesJson(List<SaleRecord> sales) {
         StringBuilder json = new StringBuilder();
         json.append("{\n");
         json.append("  \"totalSalesCount\": ").append(sales.size()).append(",\n");
-        double totalRevenue = sales.stream().mapToDouble(SaleRecord::getFinalPrice).sum();
+        double totalRevenue = sumRevenue(sales);
         json.append("  \"totalRevenue\": ").append(String.format("%.2f", totalRevenue)).append(",\n");
+
+        // The amount of sales of every branch, so one report shows the whole network side by side
+        Map<String, Integer> countsByBranch = countSalesByBranch(sales);
+        Map<String, Double> revenueByBranch = sumRevenueByBranch(sales);
+        json.append("  \"salesByBranch\": {\n");
+        int written = 0;
+        for (Map.Entry<String, Integer> entry : countsByBranch.entrySet()) {
+            json.append("    \"").append(entry.getKey()).append("\": { \"salesCount\": ")
+                    .append(entry.getValue()).append(", \"revenue\": ")
+                    .append(String.format("%.2f", revenueByBranch.get(entry.getKey()))).append(" }");
+            written++;
+            json.append(written < countsByBranch.size() ? "," : "").append("\n");
+        }
+        json.append("  },\n");
+
         json.append("  \"sales\": [\n");
 
         for (int i = 0; i < sales.size(); i++) {
@@ -40,7 +88,7 @@ public class ReportGenerator {
         return json.toString();
     }
 
-    // יצוא דוח למסמך Word (בפורמט XML/HTML תואם Word באופן מלא)
+    // Exporting the report into a Word document (an HTML format that Word opens as a document)
     public static void exportToWordDoc(String filePath, String title, List<SaleRecord> sales) throws IOException {
         File file = new File(filePath);
         try (PrintWriter pw = new PrintWriter(new FileWriter(file))) {
@@ -56,6 +104,23 @@ public class ReportGenerator {
             pw.println("<body>");
             pw.println("<h1>" + title + "</h1>");
             pw.println("<p>תאריך הפקה: " + java.time.LocalDateTime.now() + "</p>");
+
+            // A summary table showing the amount of sales of every branch
+            pw.println("<h2>כמות מכירות לפי סניף</h2>");
+            pw.println("<table>");
+            pw.println("<tr><th>סניף</th><th>כמות מכירות</th><th>הכנסות</th></tr>");
+            Map<String, Integer> countsByBranch = countSalesByBranch(sales);
+            Map<String, Double> revenueByBranch = sumRevenueByBranch(sales);
+            for (Map.Entry<String, Integer> entry : countsByBranch.entrySet()) {
+                pw.println("<tr>");
+                pw.println("<td>" + entry.getKey() + "</td>");
+                pw.println("<td>" + entry.getValue() + "</td>");
+                pw.println("<td>₪" + String.format("%.2f", revenueByBranch.get(entry.getKey())) + "</td>");
+                pw.println("</tr>");
+            }
+            pw.println("</table>");
+
+            pw.println("<h2>פירוט המכירות</h2>");
             pw.println("<table>");
             pw.println("<tr><th>מזהה עסקה</th><th>סניף</th><th>מוצר</th><th>קטגוריה</th><th>כמות</th><th>מחיר סופי</th></tr>");
 

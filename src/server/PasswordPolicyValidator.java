@@ -11,7 +11,7 @@ public class PasswordPolicyValidator {
      */
     public static void validatePassword(String password) throws AuthenticationException {
         if (password == null || password.length() < MIN_LENGTH) {
-            throw new AuthenticationException("הסיסמה חייבת להכיל לפחות " + MIN_LENGTH + " תווים.");
+            throw new AuthenticationException("the password must contain at least " + MIN_LENGTH + " characters.");
         }
         boolean hasUpper = false;
         boolean hasLower = false;
@@ -24,7 +24,8 @@ public class PasswordPolicyValidator {
         }
 
         if (!hasUpper || !hasLower || !hasDigit) {
-            throw new AuthenticationException("הסיסמה חייבת להכיל לפחות אות גדולה אחת באנגלית, אות קטנה אחת, וספרה אחת.");
+            throw new AuthenticationException(
+                    "the password must contain at least one upper case letter, one lower case letter and one digit.");
         }
     }
 }
