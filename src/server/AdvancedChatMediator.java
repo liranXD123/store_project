@@ -1,19 +1,32 @@
 package server;
 
-import java.util.*;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.UUID;
 
-// Class responsible for mediating advanced chat functionalities, including managing chat rooms, participants, and waiting queues for users attempting to initiate chats with busy users.
+// Mediator of all the chats in the system. No employee talks to another employee directly:
+// everybody asks this single object to open a chat, to join one or to leave one, and it is
+// the only place that knows who is talking with whom.
+// It also keeps, for every branch, the list of employees that asked for a chat while all the
+// employees of that branch were busy, so they can be called back once somebody becomes free.
 public class AdvancedChatMediator {
     private static AdvancedChatMediator instance;
 
-    // Map to keep track of active chat rooms and their participants
-    private final Map<String, Set<String>> activeRooms = new ConcurrentHashMap<>();
-    private final Map<String, String> userToRoom = new ConcurrentHashMap<>();
-    private final Map<String, Queue<String>> waitingQueues = new ConcurrentHashMap<>();
+    // Map holding the participants of every active chat room
+    private final Map<String, Set<String>> activeRooms = new HashMap<String, Set<String>>();
+    // Map telling, for every employee, the room they are currently sitting in
+    private final Map<String, String> userToRoom = new HashMap<String, String>();
+    // Map holding, for every branch, the employees waiting for a free employee of that branch
+    private final Map<String, List<String>> branchWaitingQueues = new HashMap<String, List<String>>();
 
-    private AdvancedChatMediator() {}
+    private AdvancedChatMediator() {
+    }
 
     public static synchronized AdvancedChatMediator getInstance() {
         // Ensuring that only one instance of the AdvancedChatMediator class is created (Singleton pattern)
@@ -23,22 +36,14 @@ public class AdvancedChatMediator {
         return instance;
     }
 
-    public synchronized String requestChat(String requesterId, String targetId) {
-        // Checking if the user to whom the chat request is sent is already in another chat
-        if (isUserInChat(targetId)) {
-            waitingQueues.computeIfAbsent(targetId, k -> new ConcurrentLinkedQueue<>()).add(requesterId);
-            return "QUEUED"; 
-        }
-        return createOneOnOneChat(requesterId, targetId);
-    }
-
-    private synchronized String createOneOnOneChat(String userA, String userB) {
-        // Checking if either user is already in another chat room
+    // Opening a chat room between two employees.
+    // Returning the ID of the new room, or null when one of them is already inside another chat
+    public synchronized String createOneOnOneChat(String userA, String userB) {
         if (userToRoom.containsKey(userA) || userToRoom.containsKey(userB)) {
-            return null; 
+            return null;
         }
         String roomId = "ROOM_" + UUID.randomUUID().toString().substring(0, 6);
-        Set<String> participants = Collections.synchronizedSet(new HashSet<>());
+        Set<String> participants = new HashSet<String>();
         participants.add(userA);
         participants.add(userB);
 
@@ -49,10 +54,12 @@ public class AdvancedChatMediator {
         return roomId;
     }
 
+    // Adding a manager into the room of one of the employees, so they can follow the conversation
     public synchronized boolean joinChatAsManager(String managerId, String targetUserId) {
-        // Checking if the user to whom the request is sent is already in a chat room
+        // Checking if the requested employee is inside a chat room at all
         String roomId = userToRoom.get(targetUserId);
-        if (roomId == null) return false;
+        if (roomId == null)
+            return false;
 
         Set<String> participants = activeRooms.get(roomId);
         if (participants != null) {
@@ -63,50 +70,73 @@ public class AdvancedChatMediator {
         return false;
     }
 
+    // Removing an employee from their chat room, and closing the room when nobody is left to talk to
     public synchronized void leaveChat(String userId) {
-        // Removing the user from the list of participants in the chat room, and checking the queue of users waiting for a chat
         String roomId = userToRoom.remove(userId);
-        if (roomId != null) {
-            Set<String> participants = activeRooms.get(roomId);
-            if (participants != null) {
-                participants.remove(userId);
-                checkQueueAndNotify(userId); 
+        if (roomId == null)
+            return;
 
-                if (participants.size() <= 1) {
-                    for (String remaining : participants) {
-                        userToRoom.remove(remaining);
-                        checkQueueAndNotify(remaining); 
-                    }
-                    activeRooms.remove(roomId);
-                }
+        Set<String> participants = activeRooms.get(roomId);
+        if (participants == null)
+            return;
+
+        participants.remove(userId);
+        // A room with a single participant left is no longer a conversation, so it is closed
+        if (participants.size() <= 1) {
+            for (String remaining : participants) {
+                userToRoom.remove(remaining);
             }
+            activeRooms.remove(roomId);
         }
     }
 
-    private void checkQueueAndNotify(String freedUserId) {
-        // Checking if there are users waiting to chat with the freed user, and notifying the appropriate users
-        Queue<String> queue = waitingQueues.get(freedUserId);
-        if (queue != null && !queue.isEmpty()) {
-            String waitingUser = queue.poll(); 
-            
-            ClientHandler handler = SessionManager.getInstance().getHandler(freedUserId);
-            if (handler != null) {
-                handler.sendMessage("CHAT_QUEUED::User " + waitingUser + " requested a chat while you were busy. You can now start a chat with them.");
-            }
-        }
-    }
-
-    public Set<String> getRoomParticipants(String userId) {
-        // Returning the list of users in the chat room of the requested user, if they are in such a room
+    // Returning the employees that share the chat room of the given employee
+    public synchronized Set<String> getRoomParticipants(String userId) {
         String roomId = userToRoom.get(userId);
         if (roomId != null && activeRooms.containsKey(roomId)) {
-            return Collections.unmodifiableSet(activeRooms.get(roomId));
+            return new HashSet<String>(activeRooms.get(roomId));
         }
         return Collections.emptySet();
     }
 
-    public boolean isUserInChat(String userId) {
-        // Checking if the user is in any chat room
+    // Checking whether the employee is currently inside a chat room
+    public synchronized boolean isUserInChat(String userId) {
         return userToRoom.containsKey(userId);
+    }
+
+    // Returning every employee that is currently sitting in some chat room,
+    // so a manager can be shown which conversations are open
+    public synchronized List<String> getUsersInChat() {
+        return new ArrayList<String>(userToRoom.keySet());
+    }
+
+    // Remembering an employee that asked to talk to a branch in which nobody was free.
+    // The same employee is not written into the queue of the same branch twice.
+    public synchronized void addToBranchQueue(String branchId, String requesterId) {
+        List<String> queue = branchWaitingQueues.get(branchId);
+        if (queue == null) {
+            queue = new LinkedList<String>();
+            branchWaitingQueues.put(branchId, queue);
+        }
+        if (!queue.contains(requesterId)) {
+            queue.add(requesterId);
+        }
+    }
+
+    // Taking the employee that has been waiting the longest for the given branch.
+    // Returning null when nobody is waiting for that branch
+    public synchronized String pollBranchQueue(String branchId) {
+        List<String> queue = branchWaitingQueues.get(branchId);
+        if (queue == null || queue.isEmpty()) {
+            return null;
+        }
+        return queue.remove(0);
+    }
+
+    // Removing an employee from every waiting queue, used when they disconnect
+    public synchronized void removeFromAllQueues(String userId) {
+        for (List<String> queue : branchWaitingQueues.values()) {
+            queue.remove(userId);
+        }
     }
 }

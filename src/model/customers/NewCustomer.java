@@ -2,9 +2,9 @@ package model.customers;
 
 // Class representing a new customer in the store system, extending the abstract Customer class.
 public class NewCustomer extends Customer {
-    public NewCustomer(String id, String fullName, String phone) {
-        // Calling the constructor of the parent Customer class with ID, full name, and phone number
-        super(id, fullName, phone);
+    public NewCustomer(String id, String fullName, String idNumber, String phone) {
+        // Calling the constructor of the parent Customer class with ID, full name, ID number and phone number
+        super(id, fullName, idNumber, phone);
     }
 
     @Override

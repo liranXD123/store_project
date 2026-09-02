@@ -1,14 +1,17 @@
 package server;
 
 import exceptions.DuplicateLoginException;
+import java.util.HashMap;
 import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
 
+// Singleton keeping track of who is connected right now, so the same employee cannot be
+// logged in from two computers at the same time. Every method is synchronized because
+// the handlers of the different clients call it from different threads.
 public class SessionManager {
     private static SessionManager instance;
 
     // Map to keep track of active sessions, mapping user IDs to their corresponding ClientHandler instances
-    private final Map<String, ClientHandler> activeSessions = new ConcurrentHashMap<>();
+    private final Map<String, ClientHandler> activeSessions = new HashMap<String, ClientHandler>();
 
     private SessionManager() {}
 
@@ -37,14 +40,6 @@ public class SessionManager {
         return activeSessions.containsKey(userId);
     }
 
-    // Function to retrieve the ClientHandler instance for a logged-in user by their ID
-    public synchronized ClientHandler getClientHandler(String userId) {
-        return activeSessions.get(userId);
-    }
-    // Function to retrieve all active sessions
-    public synchronized Map<String, ClientHandler> getActiveSessions() {
-        return activeSessions;
-    }
     // Function to retrieve the ClientHandler instance for a logged-in user by their ID
     public synchronized ClientHandler getHandler(String userId) {
         return activeSessions.get(userId);

@@ -1,36 +1,42 @@
 package server;
 
-import java.util.Collections;
+import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.CopyOnWriteArrayList;
 
 import exceptions.AuthenticationException;
 import exceptions.OutOfStockException;
 import model.Branch;
 import model.Product;
-import model.Role;
 import model.SaleRecord;
 import model.User;
 import model.customers.Customer;
-import model.customers.NewCustomer;
-import model.customers.ReturningCustomer;
-import model.customers.VipCustomer;
 
-// Singleton class responsible for managing store data, including users, branches, customers, products, and sales history. It provides methods for authentication, adding users/customers, processing purchases, and retrieving various data snapshots.
+// Singleton class responsible for managing store data, including users, branches, customers,
+// products and sales history. The employees, the customers and the products are kept in the
+// JSON files of the db folder, so they survive a restart of the server: they are read once
+// when this object is created, and written again after every change.
 public class StoreDataManager {
     private static StoreDataManager instance;
 
-    private final Map<String, User> users = new ConcurrentHashMap<>();
-    private final Map<String, Branch> branches = new ConcurrentHashMap<>();
-    private final Map<String, Customer> customers = new ConcurrentHashMap<>();
-    private final Map<String, Product> products = new ConcurrentHashMap<>();
-    private final List<SaleRecord> salesHistory = new CopyOnWriteArrayList<>();
+    // The files that hold the data of the system
+    private final StoreDatabase database = new StoreDatabase();
+
+    // All the collections are reached only through the synchronized methods of this class,
+    // and every method that hands data out returns a copy, so no caller can iterate over a
+    // collection while another thread is changing it
+    private final Map<String, User> users = new HashMap<String, User>();
+    private final Map<String, Branch> branches = new HashMap<String, Branch>();
+    private final Map<String, Customer> customers = new HashMap<String, Customer>();
+    private final Map<String, Product> products = new HashMap<String, Product>();
+    private final List<SaleRecord> salesHistory = new ArrayList<SaleRecord>();
 
     private StoreDataManager() {
-        initDefaultData();
+        // Creating the database files when they are not there yet, and reading them into memory
+        database.initializeIfMissing();
+        loadFromDatabase();
     }
 
     public static synchronized StoreDataManager getInstance() {
@@ -42,47 +48,22 @@ public class StoreDataManager {
         return instance;
     }
 
-    private void initDefaultData() {
-        // Branches
-        Branch b1 = new Branch("B1", "Tel Aviv");
-        Branch b2 = new Branch("B2", "Haifa");
-        branches.put("B1", b1);
-        branches.put("B2", b2);
+    // Reading the saved data into memory. The branches are read first, because the stock
+    // of every product is saved per branch and has to be put back into an existing branch
+    private void loadFromDatabase() {
+        branches.putAll(database.loadBranches());
+        users.putAll(database.loadUsers());
+        customers.putAll(database.loadCustomers());
+        // The products carry the stock of every branch, which is put back into the branches
+        products.putAll(database.loadProducts(branches));
+        salesHistory.addAll(database.loadSales());
 
-        // Users
-        User admin = new User("E101", "Avi Cohen", "012345678", "050-1111111", "12-345-678", "B1", Role.ADMIN,
-                "admin123");
-        User shiftMgr = new User("E102", "Dana Levi", "023456789", "052-2222222", "12-345-679", "B1",
-                Role.SHIFT_MANAGER, "mgr123");
-        User cashier = new User("E103", "Yossi Sharon", "034567890", "054-3333333", "12-345-680", "B2", Role.CASHIER,
-                "cash123");
-        users.put(admin.getEmployeeId(), admin);
-        users.put(shiftMgr.getEmployeeId(), shiftMgr);
-        users.put(cashier.getEmployeeId(), cashier);
-
-        // Products and initial stock for branches
-        Product p1 = new Product("P01", " Polo Shirt", "Shirts", 120.0);
-        Product p2 = new Product("P02", "Jeans", "Pants", 250.0);
-        Product p3 = new Product("P03", "Leather Jacket", "Jackets", 450.0);
-        products.put(p1.getId(), p1);
-        products.put(p2.getId(), p2);
-        products.put(p3.getId(), p3);
-
-        b1.addStock(p1, 20);
-        b1.addStock(p2, 15);
-        b2.addStock(p1, 10);
-        b2.addStock(p3, 8);
-
-        // initializing customers
-        Customer c1 = new NewCustomer("C01", "Ronnie Kline", "050-9999991");
-        Customer c2 = new ReturningCustomer("C02", "Michal Ziv", "050-9999992");
-        Customer c3 = new VipCustomer("C03", "Alon Doron", "050-9999993");
-        customers.put(c1.getId(), c1);
-        customers.put(c2.getId(), c2);
-        customers.put(c3.getId(), c3);
+        System.out.println("Database loaded: " + branches.size() + " branches, " + users.size()
+                + " employees, " + customers.size() + " customers, " + products.size() + " products, "
+                + salesHistory.size() + " sales.");
     }
 
-    public User authenticate(String employeeId, String password) throws AuthenticationException {
+    public synchronized User authenticate(String employeeId, String password) throws AuthenticationException {
         // Authenticating a user by their ID and password
         User u = users.get(employeeId);
         if (u == null || !u.validatePassword(password)) {
@@ -98,6 +79,7 @@ public class StoreDataManager {
             return false;
         }
         users.put(user.getEmployeeId(), user);
+        database.saveUsers(users);
         return true;
     }
 
@@ -108,21 +90,48 @@ public class StoreDataManager {
             return false;
         }
         customers.put(customer.getId(), customer);
+        database.saveCustomers(customers);
         return true;
     }
 
-    public synchronized void registerCustomer(Customer customer) {
-        // Registering a new customer in the system and adding them to the customers
-        // database
-        customers.put(customer.getId(), customer);
-        LoggerService.getInstance().log(LoggerService.LogType.CUSTOMERS, "Registered customer: " + customer);
+    // Adding a brand new product to the catalogue of the network, together with the amount
+    // of it that arrived into the branch that added it.
+    // Returning false when a product with that ID is already in the catalogue
+    public synchronized boolean addProduct(Product product, String branchId, int quantity) {
+        if (products.containsKey(product.getId())) {
+            return false;
+        }
+        Branch branch = branches.get(branchId);
+        if (branch == null) {
+            throw new IllegalArgumentException("Invalid branch ID");
+        }
+
+        products.put(product.getId(), product);
+        if (quantity > 0) {
+            branch.addStock(product, quantity);
+        }
+        database.saveProducts(products, branches);
+        return true;
     }
 
-    public synchronized void registerEmployee(User user) {
-        // Registering a new employee in the system and adding them to the users
-        // database
-        users.put(user.getEmployeeId(), user);
-        LoggerService.getInstance().log(LoggerService.LogType.EMPLOYEES, "Registered employee: " + user);
+    // Adding stock of an existing product to a branch, which is the purchase side of the
+    // inventory management (buying goods in, as opposed to selling them to a customer)
+    public synchronized void restockProduct(String branchId, String prodId, int qty) {
+        Branch branch = branches.get(branchId);
+        Product prod = products.get(prodId);
+
+        if (branch == null || prod == null) {
+            throw new IllegalArgumentException("Invalid branch or product ID");
+        }
+        if (qty <= 0) {
+            throw new IllegalArgumentException("Quantity must be greater than zero");
+        }
+
+        branch.addStock(prod, qty);
+        // The stock is part of the products file, so it is written after every change
+        database.saveProducts(products, branches);
+        LoggerService.getInstance().log(LoggerService.LogType.TRANSACTIONS,
+                "Restock | Branch: " + branchId + " | Item: " + prod.getName() + " (x" + qty + ")");
     }
 
     public synchronized SaleRecord processPurchase(String branchId, String empId, String custId,
@@ -139,8 +148,9 @@ public class StoreDataManager {
             throw new IllegalArgumentException("Invalid branch, product, or customer ID");
         }
 
-        // Reducing stock in a thread-safe manner
+        // Reducing stock in a thread-safe manner, and writing the new stock to the products file
         branch.reduceStock(prod, qty);
+        database.saveProducts(products, branches);
 
         // Calculating final price based on customer type
         double baseTotal = prod.getBasePrice() * qty;
@@ -150,32 +160,39 @@ public class StoreDataManager {
                 branchId, empId, custId, prodId, prod.getName(), prod.getCategory(), qty, finalPrice);
 
         salesHistory.add(record);
+        // The sale joins the history that the reports are built from, so it is written to the file too
+        database.saveSales(salesHistory);
         LoggerService.getInstance().log(LoggerService.LogType.TRANSACTIONS, record.toLogString());
         return record;
     }
 
-    public List<SaleRecord> getSalesHistory() {
-        // Returning a list of all sale records in the system
-        return Collections.unmodifiableList(salesHistory);
+    public synchronized List<SaleRecord> getSalesHistory() {
+        // Returning a copy of all the sale records, so the caller may go over it safely
+        return new ArrayList<SaleRecord>(salesHistory);
     }
 
-    public Map<String, Customer> getCustomers() {
-        // Returning a map of all customers in the system
-        return customers;
+    public synchronized Map<String, Customer> getCustomers() {
+        // Returning a copy of the map of all customers in the system
+        return new HashMap<String, Customer>(customers);
     }
 
-    public Map<String, Branch> getBranches() {
-        // Returning a map of all branches in the system
-        return branches;
+    public synchronized Branch getBranch(String branchId) {
+        // Returning a single branch by its ID, or null when no such branch exists
+        return branches.get(branchId);
     }
 
-    public Map<String, Product> getProducts() {
-        // Returning a map of all products in the system
-        return products;
+    public synchronized boolean branchExists(String branchId) {
+        // Checking whether a branch with the given ID is defined in the system
+        return branches.containsKey(branchId);
     }
 
-    public Map<String, User> getUsers() {
-        // Returning a map of all users in the system
-        return users;
+    public synchronized Map<String, Product> getProducts() {
+        // Returning a copy of the map of all products in the system
+        return new HashMap<String, Product>(products);
+    }
+
+    public synchronized Map<String, User> getUsers() {
+        // Returning a copy of the map of all users in the system
+        return new HashMap<String, User>(users);
     }
 }

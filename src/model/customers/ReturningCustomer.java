@@ -3,8 +3,8 @@ package model.customers;
 // Class representing a returning customer in the store system, extending the abstract Customer class.
 public class ReturningCustomer extends Customer {
     // Constructor for the ReturningCustomer class that accepts all required fields for creating a new returning customer object
-    public ReturningCustomer(String id, String fullName, String phone) {
-        super(id, fullName, phone);
+    public ReturningCustomer(String id, String fullName, String idNumber, String phone) {
+        super(id, fullName, idNumber, phone);
     }
 
     @Override

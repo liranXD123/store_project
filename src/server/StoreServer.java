@@ -3,29 +3,48 @@ package server;
 import java.io.IOException;
 import java.net.ServerSocket;
 import java.net.Socket;
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
-import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
-// StoreServer class responsible for managing client connections, routing messages, and broadcasting updates in the store management system. It handles incoming client connections, manages active clients, and provides methods for routing chat messages and broadcasting inventory updates.
-public class StoreServer {
+import patterns.observer.StoreObserver;
+import patterns.observer.StoreSubject;
+
+// StoreServer class responsible for managing client connections and for telling every connected
+// client about changes in the data of the store.
+// It plays the role of the subject in the Observer pattern: each connected ClientHandler registers
+// itself as an observer, and the server only announces that something changed, without knowing
+// what each client decides to do with the announcement.
+public class StoreServer implements StoreSubject {
     // Port number on which the server listens for incoming client connections
     public static final int PORT = 7000;
-    private final List<ClientHandler> clients = new CopyOnWriteArrayList<>();
+    // The connected clients, which are also the observers of the server
+    private final List<ClientHandler> clients = Collections.synchronizedList(new ArrayList<ClientHandler>());
     private final ExecutorService threadPool = Executors.newCachedThreadPool();
     private boolean isRunning = true; // Flag to control the running state of the server
 
     public void start() {
         // Notification about the server startup
         System.out.println("Store Management Server is starting on port " + PORT + "...");
+
+        // Opening the database before the first client connects, so that a missing or a damaged
+        // data file is reported here and not in the middle of serving somebody
+        try {
+            StoreDataManager.getInstance();
+        } catch (RuntimeException e) {
+            System.err.println("Could not open the database: " + e.getMessage());
+            return;
+        }
+
         try (ServerSocket serverSocket = new ServerSocket(PORT)) {
             while (isRunning) {
                 // Accepting a new client connection
                 Socket clientSocket = serverSocket.accept();
                 System.out.println("New client connected from " + clientSocket.getRemoteSocketAddress());
                 ClientHandler handler = new ClientHandler(clientSocket, this);
-                clients.add(handler);
+                registerObserver(handler);
                 threadPool.execute(handler);
             }
         } catch (IOException e) {
@@ -37,47 +56,64 @@ public class StoreServer {
         }
     }
 
-    public void removeClient(ClientHandler handler) {
-        // Removing the client from the list when they disconnect
-        clients.remove(handler);
-    }
-
+    // Searching for an employee of the requested branch who is connected and is not busy in a chat.
+    // Returning null when every employee of that branch is busy or nobody from it is connected
     public ClientHandler findAvailableUserInBranch(String branchId, String excludeUserId) {
-        // Searching for an available user in a specific branch, excluding a specific user
-        for (ClientHandler ch : clients) {
-            if (ch.getCurrentUser() != null
-                    && ch.getCurrentUser().getBranchId().equals(branchId)
-                    && !ch.getCurrentUser().getEmployeeId().equals(excludeUserId)
-                    && !ChatManager.getInstance().isUserBusy(ch.getCurrentUser().getEmployeeId())) {
-                return ch;
+        // The iteration over a synchronized collection has to sit inside a synchronized block
+        synchronized (clients) {
+            for (ClientHandler ch : clients) {
+                if (ch.getCurrentUser() != null
+                        && ch.getCurrentUser().getBranchId().equals(branchId)
+                        && !ch.getCurrentUser().getEmployeeId().equals(excludeUserId)
+                        && !AdvancedChatMediator.getInstance().isUserInChat(ch.getCurrentUser().getEmployeeId())) {
+                    return ch;
+                }
             }
         }
         return null;
     }
 
-    public void routeChatMessage(String senderId, String message) {
-        // Sending a chat message to all connected users, excluding the sender
-        for (ClientHandler ch : clients) {
-            if (ch.getCurrentUser() != null && !ch.getCurrentUser().getEmployeeId().equals(senderId)) {
-                ch.sendMessage("CHAT_INCOMING::" + senderId + "::" + message);
+    // Registering a client as an observer of the store
+    @Override
+    public void registerObserver(StoreObserver observer) {
+        if (observer instanceof ClientHandler) {
+            clients.add((ClientHandler) observer);
+        }
+    }
+
+    // Removing a client from the observers of the store
+    @Override
+    public void removeObserver(StoreObserver observer) {
+        clients.remove(observer);
+    }
+
+    // Announcing that the inventory of a branch has changed
+    @Override
+    public void notifyInventoryChanged(String branchId) {
+        synchronized (clients) {
+            for (ClientHandler ch : clients) {
+                ch.onInventoryChanged(branchId);
             }
         }
     }
 
-    public void broadcastInventoryUpdate(String branchId) {
-        // Sending a message to all clients in a specific branch about an inventory update
-        for (ClientHandler ch : clients) {
-            if (ch.getCurrentUser() != null && ch.getCurrentUser().getBranchId().equals(branchId)) {
-                ch.sendMessage("INVENTORY_UPDATED");
+    // Announcing that the customer list of the network has changed
+    @Override
+    public void notifyCustomerListChanged() {
+        synchronized (clients) {
+            for (ClientHandler ch : clients) {
+                ch.onCustomerListChanged();
             }
         }
     }
 
-    public void broadcastUserStatus(String employeeId, boolean isOnline) {
-        // Sending a message to all clients about a user's online/offline status
-        String msg = "USER_STATUS::" + employeeId + "::" + (isOnline ? "ONLINE" : "OFFLINE");
-        for (ClientHandler ch : clients) {
-            ch.sendMessage(msg);
+    // Announcing that an employee has connected to the system or left it
+    @Override
+    public void notifyUserStatusChanged(String employeeId, boolean isOnline) {
+        synchronized (clients) {
+            for (ClientHandler ch : clients) {
+                ch.onUserStatusChanged(employeeId, isOnline);
+            }
         }
     }
 
