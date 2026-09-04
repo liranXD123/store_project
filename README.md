@@ -22,6 +22,41 @@ On Windows PowerShell:
 javac -d out (Get-ChildItem -Path src -Filter *.java -Recurse | ForEach-Object { $_.FullName })
 ```
 
+## Run tests
+
+The automated tests are written with JUnit 4. The application itself still compiles with `javac`
+alone; the JUnit and Hamcrest JARs are needed only to compile and run the files in `tests/`.
+
+From Git Bash on Windows, run:
+
+```bash
+JUNIT="$USERPROFILE/.m2/repository/junit/junit/4.13.2/junit-4.13.2.jar"
+HAMCREST="$USERPROFILE/.m2/repository/org/hamcrest/hamcrest-core/1.3/hamcrest-core-1.3.jar"
+
+javac -encoding UTF-8 -d out $(find src -name "*.java")
+javac -encoding UTF-8 -cp "out;$JUNIT;$HAMCREST" -d out $(find tests -name "*.java")
+java -cp "out;$JUNIT;$HAMCREST" org.junit.runner.JUnitCore test.StoreSystemTest test.AdvancedFeaturesTest
+```
+
+On Windows PowerShell:
+
+```powershell
+$junit = "$env:USERPROFILE\.m2\repository\junit\junit\4.13.2\junit-4.13.2.jar"
+$hamcrest = "$env:USERPROFILE\.m2\repository\org\hamcrest\hamcrest-core\1.3\hamcrest-core-1.3.jar"
+$production = Get-ChildItem -Path src -Filter *.java -Recurse |
+  ForEach-Object { Resolve-Path -Relative $_.FullName }
+$tests = Get-ChildItem -Path tests -Filter *.java -Recurse |
+  ForEach-Object { Resolve-Path -Relative $_.FullName }
+
+New-Item -ItemType Directory -Force -Path out | Out-Null
+javac -encoding UTF-8 -d out $production
+javac -encoding UTF-8 -cp "out;$junit;$hamcrest" -d out $tests
+java -cp "out;$junit;$hamcrest" org.junit.runner.JUnitCore test.StoreSystemTest test.AdvancedFeaturesTest
+```
+
+The command runs tests for customer discounts, stock management, duplicate logins, password
+policy, chat availability and system logging.
+
 ## Run
 
 The server must be started first. Use **two terminals**, both opened at the project root.
